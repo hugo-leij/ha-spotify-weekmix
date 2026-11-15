@@ -1,0 +1,26 @@
+# Spotify-login (bevat access/refresh token — NOOIT committen)
+.cache
+
+# App-gegevens (client id/secret) — NOOIT committen
+.env
+
+# Python-omgeving (hoort bij de machine, niet delen)
+.venv/
+path/
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Synology (metadata van de NAS)
+@eaDir/
+
+# Speelgeschiedenis (wordt door het script zelf bijgehouden)
+history.json
+history.json.tmp
+
+# Eigen instellingen voor het command-line script (HA bewaart ze zelf)
+settings.json
+settings.json.tmp
+.pytest_cache/

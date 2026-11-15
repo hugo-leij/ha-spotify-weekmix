@@ -1,0 +1,261 @@
+{
+  "config": {
+    "step": {
+      "pick_implementation": {
+        "title": "Kies inlogmethode"
+      },
+      "reauth_confirm": {
+        "title": "Opnieuw inloggen bij Spotify",
+        "description": "De Spotify-login is verlopen of ingetrokken. Log opnieuw in met hetzelfde account."
+      }
+    },
+    "abort": {
+      "already_configured": "Dit Spotify-account is al ingesteld.",
+      "wrong_account": "Je logde in met een ander Spotify-account dan eerst.",
+      "reauth_successful": "Opnieuw ingelogd.",
+      "connection_error": "Kan Spotify niet bereiken.",
+      "missing_credentials": "Voeg eerst je Spotify Client ID en Secret toe onder Application Credentials.",
+      "authorize_url_timeout": "Time-out bij het maken van de inloglink.",
+      "no_url_available": "Geen inlog-URL beschikbaar.",
+      "oauth_error": "Ongeldige gegevens van Spotify ontvangen.",
+      "oauth_failed": "Fout bij het ophalen van de token.",
+      "oauth_timeout": "Time-out bij het ophalen van de token.",
+      "oauth_unauthorized": "Spotify weigerde de login.",
+      "user_rejected_authorize": "Inloggen geweigerd."
+    },
+    "create_entry": {
+      "default": "Ingelogd bij Spotify."
+    }
+  },
+  "application_credentials": {
+    "description": "Maak op {developer_dashboard_url} een app aan (of gebruik je bestaande) en zet bij Redirect URIs: {redirect_url}. Vul hier de Client ID en Client Secret in. LET OP: maak geen nieuwe app als je er al één hebt — oude apps hebben nog de ruimere API (zie README)."
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Spotify Weekmix",
+        "menu_options": {
+          "players": "Spelers & planning",
+          "day_select": "Een dag instellen",
+          "blocklists": "Blocklists (artiesten, nummers, genres)",
+          "general": "Algemeen"
+        }
+      },
+      "players": {
+        "title": "Spelers & planning",
+        "data": {
+          "media_players": "Spelers (Sonos)",
+          "auto_refresh": "Elke dag automatisch verversen",
+          "refresh_time": "Tijdstip",
+          "shuffle_off": "Shuffle uitzetten na verversen",
+          "skip_on_block": "Na blokkeren meteen naar het volgende nummer"
+        },
+        "data_description": {
+          "media_players": "De eerste speler wordt gebruikt door de knoppen 'Deze artiest/dit nummer nooit meer'.",
+          "auto_refresh": "Laat UIT zolang de oude AppDaemon-job nog draait, anders overschrijven ze elkaar.",
+          "shuffle_off": "De lijst is al gehusseld met artiesten uit elkaar. Spotify-shuffle maakt het slechter en Smart Shuffle voegt nummers toe die langs alle filters gaan."
+        }
+      },
+      "day_select": {
+        "title": "Welke dag?",
+        "data": {
+          "day": "Dag"
+        }
+      },
+      "day": {
+        "title": "{day} instellen",
+        "description": "Eén item per regel. Seeds: {seeds} handgekozen nummers (Spotify-links); die gaan langs alle filters en rouleren.",
+        "data": {
+          "target": "Doel-playlist (leeg = automatisch aanmaken)",
+          "description": "Omschrijving",
+          "sources": "Bron-playlists",
+          "searches": "Zoektermen",
+          "seeds": "Seed-nummers",
+          "min_year": "Geen nummers van vóór",
+          "max_rap": "Max. rapnummers",
+          "seed_weeks": "Seeds rouleren over (weken)"
+        },
+        "data_description": {
+          "searches": "Gebruik genre-filters, bv. 'happy genre:pop'. Kale woorden als 'focus' trekken rommel aan.",
+          "seed_weeks": "Leeg = algemene instelling. 2 = elke week de helft van de seeds, de langst niet gespeelde eerst."
+        }
+      },
+      "blocklists": {
+        "title": "Blocklists",
+        "description": "Eén per regel. Artiesten: exacte naam. Genres en woorden: deel van de tekst (pas op met korte woorden, zie README).",
+        "data": {
+          "block_artists": "Geblokkeerde artiesten",
+          "block_tracks": "Geblokkeerde nummers",
+          "allow_artists": "Uitzonderingen op het genrefilter",
+          "block_genres": "Geblokkeerde genres",
+          "block_terms": "Geblokkeerde woorden in titel/artiest",
+          "rap_genres": "Genres die als rap tellen"
+        }
+      },
+      "general": {
+        "title": "Algemeen",
+        "data": {
+          "target_hours": "Speelduur per dag",
+          "max_per_artist": "Max. nummers per artiest per dag",
+          "artist_gap": "Zelfde artiest pas weer na (nummers)",
+          "rest_days": "Nummer rust (dagen) voor het terug mag",
+          "seed_weeks": "Seeds rouleren over (weken)",
+          "unique_titles": "Ook geen dubbele titels (covers)",
+          "min_popularity": "Minimale populariteit (zoekresultaten)",
+          "personal_max": "Max. eigen top/recent per dag",
+          "search_pages": "Zoekpagina's per zoekterm",
+          "market": "Land",
+          "playlist_name": "Playlistnaam"
+        },
+        "data_description": {
+          "playlist_name": "Zet het woord dag tussen accolades op de plek waar de naam van de dag moet komen (zo staat het standaard al)."
+        }
+      }
+    }
+  },
+  "selector": {
+    "day": {
+      "options": {
+        "maandag": "Maandag",
+        "dinsdag": "Dinsdag",
+        "woensdag": "Woensdag",
+        "donderdag": "Donderdag",
+        "vrijdag": "Vrijdag",
+        "zaterdag": "Zaterdag",
+        "zondag": "Zondag"
+      }
+    },
+    "day_choice": {
+      "options": {
+        "today": "Vandaag",
+        "all": "Alle dagen",
+        "monday": "Maandag",
+        "tuesday": "Dinsdag",
+        "wednesday": "Woensdag",
+        "thursday": "Donderdag",
+        "friday": "Vrijdag",
+        "saturday": "Zaterdag",
+        "sunday": "Zondag"
+      }
+    }
+  },
+  "services": {
+    "rebuild": {
+      "name": "Lijst verversen",
+      "description": "Bouwt de lijst van een dag opnieuw op.",
+      "fields": {
+        "day": {
+          "name": "Dag",
+          "description": "Vandaag, alle dagen of een weekdag."
+        },
+        "dry_run": {
+          "name": "Proefdraaien",
+          "description": "Alleen berekenen, playlist niet aanpassen."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Alleen nodig bij meerdere accounts."
+        }
+      }
+    },
+    "block_artist": {
+      "name": "Artiest blokkeren",
+      "description": "Artiest nooit meer, en meteen uit alle dag-lijsten.",
+      "fields": {
+        "artist": {
+          "name": "Artiest",
+          "description": "Leeg = wat nu op de speler speelt."
+        },
+        "entity_id": {
+          "name": "Speler",
+          "description": "Leeg = eerste ingestelde speler."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Alleen nodig bij meerdere accounts."
+        }
+      }
+    },
+    "block_track": {
+      "name": "Nummer blokkeren",
+      "description": "Nummer nooit meer (ook andere releases), en meteen uit alle dag-lijsten.",
+      "fields": {
+        "track": {
+          "name": "Nummer",
+          "description": "Spotify-link of URI. Leeg = wat nu op de speler speelt."
+        },
+        "entity_id": {
+          "name": "Speler",
+          "description": "Leeg = eerste ingestelde speler."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Alleen nodig bij meerdere accounts."
+        }
+      }
+    },
+    "unblock_artist": {
+      "name": "Artiest weer toestaan",
+      "description": "Haalt een artiest van de blocklist.",
+      "fields": {
+        "artist": {
+          "name": "Artiest",
+          "description": "Exacte naam."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Alleen nodig bij meerdere accounts."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "monday": {
+        "name": "Maandag"
+      },
+      "tuesday": {
+        "name": "Dinsdag"
+      },
+      "wednesday": {
+        "name": "Woensdag"
+      },
+      "thursday": {
+        "name": "Donderdag"
+      },
+      "friday": {
+        "name": "Vrijdag"
+      },
+      "saturday": {
+        "name": "Zaterdag"
+      },
+      "sunday": {
+        "name": "Zondag"
+      },
+      "status": {
+        "name": "Status",
+        "state": {
+          "ok": "OK",
+          "running": "Bezig",
+          "error": "Fout"
+        }
+      }
+    },
+    "button": {
+      "rebuild_today": {
+        "name": "Ververs lijst van vandaag"
+      },
+      "block_current_artist": {
+        "name": "Deze artiest nooit meer"
+      },
+      "block_current_track": {
+        "name": "Dit nummer nooit meer"
+      }
+    },
+    "switch": {
+      "auto_refresh": {
+        "name": "Automatisch verversen"
+      }
+    }
+  }
+}

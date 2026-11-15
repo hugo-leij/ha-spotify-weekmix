@@ -1,0 +1,261 @@
+{
+  "config": {
+    "step": {
+      "pick_implementation": {
+        "title": "Pick authentication method"
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate with Spotify",
+        "description": "The Spotify login expired or was revoked. Log in again with the same account."
+      }
+    },
+    "abort": {
+      "already_configured": "This Spotify account is already configured.",
+      "wrong_account": "You logged in with a different Spotify account than before.",
+      "reauth_successful": "Re-authentication successful.",
+      "connection_error": "Cannot reach Spotify.",
+      "missing_credentials": "Add your Spotify Client ID and Secret under Application Credentials first.",
+      "authorize_url_timeout": "Timeout generating the authorize URL.",
+      "no_url_available": "No authorize URL available.",
+      "oauth_error": "Received invalid token data from Spotify.",
+      "oauth_failed": "Error while obtaining the access token.",
+      "oauth_timeout": "Timeout obtaining the access token.",
+      "oauth_unauthorized": "Spotify rejected the login.",
+      "user_rejected_authorize": "Authorization was rejected."
+    },
+    "create_entry": {
+      "default": "Logged in to Spotify."
+    }
+  },
+  "application_credentials": {
+    "description": "Create an app at {developer_dashboard_url} (or use your existing one) and add this Redirect URI: {redirect_url}. Then enter its Client ID and Client Secret here. Note: if you already have a Spotify app, reuse it — apps created after February 2026 get a more limited API (see README)."
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Spotify Weekmix",
+        "menu_options": {
+          "players": "Players & schedule",
+          "day_select": "Configure a day",
+          "blocklists": "Blocklists (artists, tracks, genres)",
+          "general": "General"
+        }
+      },
+      "players": {
+        "title": "Players & schedule",
+        "data": {
+          "media_players": "Players",
+          "auto_refresh": "Refresh automatically every day",
+          "refresh_time": "Time",
+          "shuffle_off": "Turn shuffle off after refreshing",
+          "skip_on_block": "Skip to the next track after blocking"
+        },
+        "data_description": {
+          "media_players": "The first player is used by the 'Never this artist/track again' buttons.",
+          "auto_refresh": "Leave OFF while another job still rebuilds the same playlists, or they will overwrite each other.",
+          "shuffle_off": "The playlist is already shuffled with artists spread apart. Spotify shuffle makes it worse, and Smart Shuffle adds tracks that bypass every filter."
+        }
+      },
+      "day_select": {
+        "title": "Which day?",
+        "data": {
+          "day": "Day"
+        }
+      },
+      "day": {
+        "title": "Configure {day}",
+        "description": "One item per line. Seeds: {seeds} hand-picked tracks (Spotify links); they bypass all filters and rotate.",
+        "data": {
+          "target": "Target playlist (empty = create automatically)",
+          "description": "Description",
+          "sources": "Source playlists",
+          "searches": "Search terms",
+          "seeds": "Seed tracks",
+          "min_year": "No tracks released before",
+          "max_rap": "Max. rap tracks",
+          "seed_weeks": "Rotate seeds over (weeks)"
+        },
+        "data_description": {
+          "searches": "Use genre filters, e.g. 'happy genre:pop'. Bare words like 'focus' attract background music.",
+          "seed_weeks": "Empty = general setting. 2 = half of the seeds each week, least recently played first."
+        }
+      },
+      "blocklists": {
+        "title": "Blocklists",
+        "description": "One per line. Artists: exact name. Genres and words: part of the text (careful with short words, see README).",
+        "data": {
+          "block_artists": "Blocked artists",
+          "block_tracks": "Blocked tracks",
+          "allow_artists": "Exceptions to the genre filter",
+          "block_genres": "Blocked genres",
+          "block_terms": "Blocked words in title/artist",
+          "rap_genres": "Genres counted as rap"
+        }
+      },
+      "general": {
+        "title": "General",
+        "data": {
+          "target_hours": "Length per day",
+          "max_per_artist": "Max. tracks per artist per day",
+          "artist_gap": "Same artist again after (tracks)",
+          "rest_days": "Track rest (days) before it may return",
+          "seed_weeks": "Rotate seeds over (weeks)",
+          "unique_titles": "No duplicate titles either (covers)",
+          "min_popularity": "Minimum popularity (search results)",
+          "personal_max": "Max. own top/recent per day",
+          "search_pages": "Search pages per term",
+          "market": "Market (country)",
+          "playlist_name": "Playlist name"
+        },
+        "data_description": {
+          "playlist_name": "Put the word dag between curly braces where the day name should go (the default already does)."
+        }
+      }
+    }
+  },
+  "selector": {
+    "day": {
+      "options": {
+        "maandag": "Maandag",
+        "dinsdag": "Dinsdag",
+        "woensdag": "Woensdag",
+        "donderdag": "Donderdag",
+        "vrijdag": "Vrijdag",
+        "zaterdag": "Zaterdag",
+        "zondag": "Zondag"
+      }
+    },
+    "day_choice": {
+      "options": {
+        "today": "Today",
+        "all": "All days",
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+      }
+    }
+  },
+  "services": {
+    "rebuild": {
+      "name": "Rebuild playlist",
+      "description": "Rebuilds the playlist for a day.",
+      "fields": {
+        "day": {
+          "name": "Day",
+          "description": "Today, all days, or a weekday."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Only compute; do not change the playlist."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Only needed with multiple accounts."
+        }
+      }
+    },
+    "block_artist": {
+      "name": "Block artist",
+      "description": "Never this artist again; also removes them from all seven playlists.",
+      "fields": {
+        "artist": {
+          "name": "Artist",
+          "description": "Empty = what is playing now."
+        },
+        "entity_id": {
+          "name": "Player",
+          "description": "Empty = first configured player."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Only needed with multiple accounts."
+        }
+      }
+    },
+    "block_track": {
+      "name": "Block track",
+      "description": "Never this track again (any release); also removes it from all seven playlists.",
+      "fields": {
+        "track": {
+          "name": "Track",
+          "description": "Spotify link or URI. Empty = what is playing now."
+        },
+        "entity_id": {
+          "name": "Player",
+          "description": "Empty = first configured player."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Only needed with multiple accounts."
+        }
+      }
+    },
+    "unblock_artist": {
+      "name": "Unblock artist",
+      "description": "Removes an artist from the blocklist.",
+      "fields": {
+        "artist": {
+          "name": "Artist",
+          "description": "Exact name."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Only needed with multiple accounts."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "monday": {
+        "name": "Monday"
+      },
+      "tuesday": {
+        "name": "Tuesday"
+      },
+      "wednesday": {
+        "name": "Wednesday"
+      },
+      "thursday": {
+        "name": "Thursday"
+      },
+      "friday": {
+        "name": "Friday"
+      },
+      "saturday": {
+        "name": "Saturday"
+      },
+      "sunday": {
+        "name": "Sunday"
+      },
+      "status": {
+        "name": "Status",
+        "state": {
+          "ok": "OK",
+          "running": "Running",
+          "error": "Error"
+        }
+      }
+    },
+    "button": {
+      "rebuild_today": {
+        "name": "Rebuild today"
+      },
+      "block_current_artist": {
+        "name": "Never this artist again"
+      },
+      "block_current_track": {
+        "name": "Never this track again"
+      }
+    },
+    "switch": {
+      "auto_refresh": {
+        "name": "Automatic daily refresh"
+      }
+    }
+  }
+}

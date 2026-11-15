@@ -1,0 +1,52 @@
+rebuild:
+  fields:
+    day:
+      default: today
+      selector:
+        select:
+          translation_key: day_choice
+          options: [today, all, monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+    dry_run:
+      default: false
+      selector:
+        boolean:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: spotify_weekmix
+block_artist:
+  fields:
+    artist:
+      selector:
+        text:
+    entity_id:
+      selector:
+        entity:
+          domain: media_player
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: spotify_weekmix
+block_track:
+  fields:
+    track:
+      selector:
+        text:
+    entity_id:
+      selector:
+        entity:
+          domain: media_player
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: spotify_weekmix
+unblock_artist:
+  fields:
+    artist:
+      required: true
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: spotify_weekmix

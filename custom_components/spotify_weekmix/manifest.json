@@ -1,0 +1,13 @@
+{
+  "domain": "spotify_weekmix",
+  "name": "Spotify Weekmix",
+  "codeowners": ["@hugo-leij"],
+  "config_flow": true,
+  "dependencies": ["application_credentials"],
+  "documentation": "https://github.com/hugo-leij/ha-spotify-weekmix",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/hugo-leij/ha-spotify-weekmix/issues",
+  "requirements": ["spotipy==2.26.0"],
+  "version": "0.1.0"
+}
