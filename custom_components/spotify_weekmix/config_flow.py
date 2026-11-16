@@ -195,8 +195,15 @@ class MixOptionsFlow(OptionsFlow):
             def mutate(st):
                 for k in self.LISTS:
                     st[k] = _lines(user_input.get(k))
+                st["block_scripts"] = list(user_input.get("block_scripts", []))
             return await self._save(mutate)
-        schema = vol.Schema({vol.Optional(k): TEXT_LIST for k in self.LISTS})
+        schema = vol.Schema({
+            vol.Optional("block_scripts", default=s.get("block_scripts", list(engine.SCRIPTS))):
+                sel.SelectSelector(sel.SelectSelectorConfig(
+                    options=list(engine.SCRIPTS), multiple=True, translation_key="script",
+                    mode=sel.SelectSelectorMode.LIST)),
+            **{vol.Optional(k): TEXT_LIST for k in self.LISTS},
+        })
         return self.async_show_form(
             step_id="blocklists",
             data_schema=self.add_suggested_values_to_schema(

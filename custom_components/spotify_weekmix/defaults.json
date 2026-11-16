@@ -804,7 +804,9 @@
   "urbano latino",
   "trap latino",
   "neoperreo",
-  "perreo"
+  "perreo",
+  "children's music",
+  "lullaby"
  ],
  "block_terms": [
   "meditat",
@@ -862,5 +864,17 @@
   "drill",
   "grime"
  ],
- "block_tracks": []
+ "block_tracks": [],
+ "block_scripts": [
+  "chinese",
+  "japanese",
+  "korean",
+  "cyrillic",
+  "arabic",
+  "hebrew",
+  "greek",
+  "thai",
+  "indic"
+ ],
+ "defaults_version": 2
 }

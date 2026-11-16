@@ -91,7 +91,11 @@
           "allow_artists": "Exceptions to the genre filter",
           "block_genres": "Blocked genres",
           "block_terms": "Blocked words in title/artist",
-          "rap_genres": "Genres counted as rap"
+          "rap_genres": "Genres counted as rap",
+          "block_scripts": "Block tracks written in"
+        },
+        "data_description": {
+          "block_scripts": "Tracks whose title or artist contains these scripts are skipped (search results and own top/recent; not source playlists or seeds)."
         }
       },
       "general": {
@@ -140,6 +144,19 @@
         "friday": "Friday",
         "saturday": "Saturday",
         "sunday": "Sunday"
+      }
+    },
+    "script": {
+      "options": {
+        "chinese": "Chinese",
+        "japanese": "Japanese",
+        "korean": "Korean",
+        "cyrillic": "Cyrillic (Russian, Ukrainian, …)",
+        "arabic": "Arabic",
+        "hebrew": "Hebrew",
+        "greek": "Greek",
+        "thai": "Thai",
+        "indic": "Indian scripts (Hindi, Tamil, …)"
       }
     }
   },

@@ -91,7 +91,11 @@
           "allow_artists": "Uitzonderingen op het genrefilter",
           "block_genres": "Geblokkeerde genres",
           "block_terms": "Geblokkeerde woorden in titel/artiest",
-          "rap_genres": "Genres die als rap tellen"
+          "rap_genres": "Genres die als rap tellen",
+          "block_scripts": "Nummers weren in het schrift"
+        },
+        "data_description": {
+          "block_scripts": "Nummers met deze tekens in titel of artiest vallen af (zoekresultaten en eigen top/recent; niet bron-playlists of seeds)."
         }
       },
       "general": {
@@ -140,6 +144,19 @@
         "friday": "Vrijdag",
         "saturday": "Zaterdag",
         "sunday": "Zondag"
+      }
+    },
+    "script": {
+      "options": {
+        "chinese": "Chinees",
+        "japanese": "Japans",
+        "korean": "Koreaans",
+        "cyrillic": "Cyrillisch (Russisch, Oekraïens, …)",
+        "arabic": "Arabisch",
+        "hebrew": "Hebreeuws",
+        "greek": "Grieks",
+        "thai": "Thais",
+        "indic": "Indiase schriften (Hindi, Tamil, …)"
       }
     }
   },

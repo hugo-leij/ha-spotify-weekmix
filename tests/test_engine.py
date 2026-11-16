@@ -344,3 +344,37 @@ def test_all_covers_present_and_small():
     for day in engine.WEEKDAYS:
         p = os.path.join(engine.COVERS_DIR, f"{day}.jpg")
         assert os.path.getsize(p) * 4 / 3 < 256 * 1024, day
+
+
+# ---------------- schriften, gasten, kindermuziek (0.3.0) ----------------
+
+def test_script_filter_is_configurable():
+    sp = FakeSpotify()
+    jp = sp.add_track("東京", [sp.find_or_make_artist("Q", ["pop"])])["uri"]
+    ru = sp.add_track("Привет", [sp.find_or_make_artist("R", ["pop"])])["uri"]
+    sp.search_results["pop"] = [jp, ru]
+    _, r = build(sp, settings(target_hours=5))
+    assert r["uris"] == []
+    s = settings(target_hours=5)
+    s["block_scripts"] = ["cyrillic"]                    # Japans weer toegestaan
+    _, r = build(sp, s)
+    assert r["uris"] == [jp]
+
+
+def test_terms_and_script_checked_on_guest_artists_too():
+    sp = FakeSpotify()
+    u1 = sp.add_track("Song", [sp.find_or_make_artist("Main", ["pop"]), sp.find_or_make_artist("Yoga Guru")])["uri"]
+    u2 = sp.add_track("Song 2", [sp.find_or_make_artist("Main2", ["pop"]), sp.find_or_make_artist("小明")])["uri"]
+    sp.search_results["pop"] = [u1, u2]
+    _, r = build(sp, settings(target_hours=5))
+    assert r["uris"] == []
+
+
+def test_childrens_music_blocked_by_default():
+    sp = FakeSpotify()
+    kid = sp.add_track("Hoofd, Schouders, Knie en Teen", [sp.find_or_make_artist("Juf Roos", ["children's music"])])["uri"]
+    ok = sp.add_track("Fine", [sp.find_or_make_artist("Goed", ["pop"])])["uri"]
+    sp.search_results["pop"] = [kid, ok]
+    _, r = build(sp, settings(target_hours=5))
+    assert r["uris"] == [ok]
+    assert "children's music" in DEFAULTS["block_genres"] and set(DEFAULTS["block_scripts"]) == set(engine.SCRIPTS)

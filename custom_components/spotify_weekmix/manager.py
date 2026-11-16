@@ -41,11 +41,23 @@ def load_defaults() -> dict:
         return json.load(fh)
 
 
+# Wat er per versie van de standaardinstellingen aan LIJSTEN is toegevoegd. Een
+# bestaande installatie krijgt alleen deze nieuwe items erbij (eigen wijzigingen
+# blijven staan; iets wat de gebruiker zelf had weggehaald komt niet terug,
+# tenzij het in een nieuwere versie opnieuw wordt toegevoegd).
+DEFAULT_ADDITIONS: dict[int, dict[str, list[str]]] = {
+    2: {"block_genres": ["children's music", "lullaby"]},
+}
+
+
 def merge_defaults(settings: dict, defaults: dict) -> dict:
     """Vult ontbrekende sleutels aan (na een update met nieuwe instellingen),
     zonder iets te overschrijven wat de gebruiker al heeft ingesteld."""
     out = copy.deepcopy(settings)
+    have = int(out.get("defaults_version") or 1)       # vóór het aanvullen bepalen!
     for k, v in defaults.items():
+        if k == "defaults_version":
+            continue
         if k not in out:
             out[k] = copy.deepcopy(v)
         elif isinstance(v, dict) and isinstance(out[k], dict) and k != "days":
@@ -57,6 +69,13 @@ def merge_defaults(settings: dict, defaults: dict) -> dict:
             out["days"][day].setdefault(k2, copy.deepcopy(v2) if k2 != "target" else "")
     for k, v in HA_DEFAULTS.items():
         out.setdefault("ha", {}).setdefault(k, copy.deepcopy(v))
+    for version in sorted(DEFAULT_ADDITIONS):
+        if version > have:
+            for key, items in DEFAULT_ADDITIONS[version].items():
+                lst = out.setdefault(key, [])
+                low = {x.lower() for x in lst}
+                lst.extend(x for x in items if x.lower() not in low)
+    out["defaults_version"] = max([have, int(defaults.get("defaults_version") or 1), *DEFAULT_ADDITIONS])
     return out
 
 

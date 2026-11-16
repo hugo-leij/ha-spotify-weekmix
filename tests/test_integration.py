@@ -316,3 +316,29 @@ async def test_token_without_scope_field_tries_covers_without_reauth(hass, creds
     await hass.services.async_call(DOMAIN, "rebuild", {"day": "monday"}, blocking=True, return_response=True)
     await hass.async_block_till_done()
     assert not [f for f in hass.config_entries.flow.async_progress() if f["context"]["source"] == "reauth"]
+
+
+def test_existing_install_gets_new_default_list_items_once():
+    from custom_components.spotify_weekmix.manager import load_defaults, merge_defaults
+    defaults = load_defaults()
+    old = {k: v for k, v in defaults.items() if k not in ("defaults_version", "block_scripts")}
+    old = __import__("copy").deepcopy(old)
+    old["block_genres"] = [g for g in old["block_genres"] if g not in ("children's music", "lullaby")] + ["eigen genre"]
+    merged = merge_defaults(old, defaults)
+    assert "children's music" in merged["block_genres"] and "eigen genre" in merged["block_genres"]
+    assert merged["block_scripts"] and merged["defaults_version"] == 2
+    # gebruiker haalt het weer weg -> komt niet terug bij een volgende start
+    merged["block_genres"].remove("lullaby")
+    again = merge_defaults(merged, defaults)
+    assert "lullaby" not in again["block_genres"]
+    assert again["block_genres"].count("children's music") == 1
+
+
+async def test_blocklists_form_saves_scripts(hass, entry):
+    mgr = await setup(hass, entry)
+    r = await hass.config_entries.options.async_init(entry.entry_id)
+    r = await hass.config_entries.options.async_configure(r["flow_id"], {"next_step_id": "blocklists"})
+    r = await hass.config_entries.options.async_configure(r["flow_id"], {
+        "block_scripts": ["chinese", "arabic"], "block_artists": "A", "block_genres": "phonk"})
+    assert r["type"] is FlowResultType.CREATE_ENTRY
+    assert mgr.settings["block_scripts"] == ["chinese", "arabic"]

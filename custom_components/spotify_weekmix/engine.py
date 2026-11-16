@@ -36,28 +36,27 @@ WEEKDAYS = ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"
 
 HISTORY_KEEP_DAYS = 180
 
-# Schriften die we niet willen in zoekresultaten (zie CLAUDE.md).
-_FOREIGN_SCRIPT = re.compile(
-    "["
-    "㐀-䶿一-鿿"   # CJK (Chinees/Han)
-    "぀-ヿ･-ﾟ"   # Japans (hiragana + katakana, incl. halfwidth)
-    "Ѐ-ӿ"                # Cyrillisch
-    "ऀ-ॿ"                # Devanagari
-    "ঀ-৿"                # Bengaals
-    "਀-੿"                # Gurmukhi
-    "઀-૿"                # Gujarati
-    "଀-୿"                # Oriya
-    "஀-௿"                # Tamil
-    "ఀ-౿"                # Telugu
-    "ಀ-೿"                # Kannada
-    "ഀ-ൿ"                # Malayalam
-    "฀-๿"                # Thais
-    "가-힣ᄀ-ᇿㄱ-ㆎ"   # Koreaans
-    "؀-ۿ"                # Arabisch
-    "֐-׿"                # Hebreeuws
-    "Ͱ-Ͽᾀ-῿"   # Grieks
-    "]"
-)
+# Schriften die uit zoekresultaten en de persoonlijke poel kunnen worden geweerd
+# (titel + alle artiesten). Instelbaar via settings["block_scripts"]; standaard
+# allemaal aan. Geromaniseerde titels ("Tera Zikr", k-pop in Latijns schrift)
+# vang je hiermee NIET — daarvoor zijn de genres in block_genres.
+SCRIPTS = {
+    "chinese": "\u3400-\u4dbf\u4e00-\u9fff",
+    "japanese": "\u3040-\u30ff\uff65-\uff9f",
+    "korean": "\uac00-\ud7a3\u1100-\u11ff\u3131-\u318e",
+    "cyrillic": "\u0400-\u04ff",
+    "arabic": "\u0600-\u06ff",
+    "hebrew": "\u0590-\u05ff",
+    "greek": "\u0370-\u03ff\u1f80-\u1fff",
+    "thai": "\u0e00-\u0e7f",
+    "indic": ("\u0900-\u097f\u0980-\u09ff\u0a00-\u0a7f\u0a80-\u0aff\u0b00-\u0b7f"
+              "\u0b80-\u0bff\u0c00-\u0c7f\u0c80-\u0cff\u0d00-\u0d7f"),
+}
+
+
+def script_regex(names) -> re.Pattern | None:
+    ranges = "".join(SCRIPTS[n] for n in names if n in SCRIPTS)
+    return re.compile(f"[{ranges}]") if ranges else None
 
 
 def normalize_playlist_id(url_or_id: str) -> str:
@@ -167,6 +166,7 @@ class MixEngine:
         self.block_genres = tuple(x.lower() for x in self.s.get("block_genres", []) if x)
         self.block_terms = tuple(x.lower() for x in self.s.get("block_terms", []) if x)
         self.rap_genres = tuple(x.lower() for x in self.s.get("rap_genres", []) if x)
+        self.script_re = script_regex(self.s.get("block_scripts", list(SCRIPTS)))
         bt = self.s.get("block_tracks", [])
         self.block_track_ids = {track_id(x) for x in bt if track_id(x)}
         self.block_track_keys = {x.lower().strip() for x in bt if "|" in x}
@@ -241,6 +241,9 @@ class MixEngine:
     def is_blocked_term(self, label: str) -> bool:
         text = label.lower()
         return any(t in text for t in self.block_terms)
+
+    def has_blocked_script(self, label: str) -> bool:
+        return bool(self.script_re and self.script_re.search(label))
 
     def matches_genre(self, artist_ids: list[str], terms) -> bool:
         joined = " ".join(g for a in artist_ids for g in self._genre_cache.get(a, [])).lower()
@@ -319,8 +322,8 @@ class MixEngine:
                 names = self._names(t)
                 if self.is_blocked_artist(names) or self._is_blocked_track(t):
                     continue
-                label = f"{t['name']} {names[0] if names else ''}"
-                if self.is_blocked_term(label) or _FOREIGN_SCRIPT.search(label):
+                label = " ".join([t["name"], *names])     # alle artiesten, ook gasten
+                if self.is_blocked_term(label) or self.has_blocked_script(label):
                     continue
                 candidates.append((t["uri"], self._artist_ids(t)))
             offset += self._search_limit
@@ -350,6 +353,7 @@ class MixEngine:
                 and self.popular_enough(t)
                 and not self.is_blocked_artist(self._names(t))
                 and not self.is_blocked_genre(self._artist_ids(t))
+                and not self.has_blocked_script(" ".join([t.get("name", ""), *self._names(t)]))
                 and not self._is_blocked_track(t)
                 and (not min_year or self._track_year(t) >= min_year)]
 

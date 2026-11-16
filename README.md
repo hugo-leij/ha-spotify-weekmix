@@ -41,9 +41,10 @@ remembers what played recently, so Wednesday doesn't sound like last Wednesday.
 - **"Never this again" buttons.** Block the artist or track that is playing
   right now: it is added to the blocklist, removed from all seven playlists,
   and the player skips to the next track.
-- **Filters** for blocked artists, genres and words in titles, a popularity
-  floor against royalty-free filler, a non-Latin-script filter, a minimum
-  release year and a cap on rap tracks per day.
+- **Filters** for blocked artists, tracks, genres and words in titles, a
+  popularity floor against royalty-free filler, a per-script filter (Chinese,
+  Japanese, Korean, Cyrillic, Arabic, Hebrew, Greek, Thai, Indian scripts — each
+  can be switched off), a minimum release year and a cap on rap tracks per day.
 - **Everything configurable in the UI**: per day (target playlist, source
   playlists, search terms, seeds, minimum year, rap cap), blocklists, players,
   schedule and general settings.
@@ -119,7 +120,7 @@ All settings live under the integration's **Configure** menu.
 |---|---|
 | **Players & schedule** | Players (the first one is used by the block buttons), daily refresh on/off and time, turn shuffle off after refreshing, skip after blocking |
 | **Configure a day** | Target playlist, description, source playlists, search terms, seed tracks, no tracks before year, max. rap tracks, seed rotation — and *Rebuild this day's playlist now* to apply the change immediately |
-| **Blocklists** | Blocked artists, blocked tracks, exceptions to the genre filter, blocked genres, blocked words, genres counted as rap — one per line |
+| **Blocklists** | Scripts to block, blocked artists, blocked tracks, exceptions to the genre filter, blocked genres, blocked words, genres counted as rap — one per line |
 | **General** | Length per day (18 h), max. per artist (4), artist gap (20), track rest (28 days), seed rotation (2 weeks), no duplicate titles, cover per day, minimum popularity (25), own top/recent tracks per day (40), search depth (19 pages), market (NL), playlist name |
 
 **Choosing search terms.** Bare words like *focus* or *morning* pull in yoga,
@@ -132,7 +133,15 @@ fewer repeats.
 `lo-fi` also matches `lo-fi house`, `italo` matches `italo house`, `latin`
 matches `latin house`. Prefer specific terms (`lo-fi beats`, `italo disco`).
 Artist names must match exactly; collaborations are caught on any artist.
-Seeds bypass every filter except *blocked tracks*.
+Words and scripts are checked against the title and **all** artists of a track,
+so a guest artist counts too. Seeds bypass every filter except *blocked tracks*.
+
+**Children's music** is recognised by its genre: Spotify tags kids' acts
+(Juf Roos, Kinderen voor Kinderen, Dirk Scheele, Nijntje, Studio 100, CoComelon,
+Pinkfong, …) as `children's music` and often `lullaby`; both are in the default
+genre blocklist. Kids' songs by artists *without* that tag only get caught by
+words in the title (`kinderlied`, `children's`, `nursery`, …) or by blocking the
+artist.
 
 ### Default settings
 
@@ -140,7 +149,9 @@ The integration ships with the author's own setup as defaults: market NL, a mood
 lists, and blocklists aimed at a Dutch household (schlager/levenslied, Dutch
 rap, k-pop, hardstyle, phonk, reggaeton, kids' and Christmas music, …). Change
 them freely — your changes are stored in Home Assistant and are never
-overwritten by updates.
+overwritten by updates. When a new version adds items to a default list (for
+example `children's music` in 0.3.0), only those new items are added to your
+list, once.
 
 ### Covers
 

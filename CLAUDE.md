@@ -234,6 +234,37 @@ and returns `uri -> (song_key, duration_ms)`.
 - The day form has *rebuild_now*: saves, then starts `async_rebuild([day])` as a
   background task so the dialog closes immediately.
 
+## Hardcoded vs. configurable (audit 2026-11-16)
+
+Everything that *filters* is now a setting. 0.3.0 moved the last one: the
+non-Latin-script filter (`_FOREIGN_SCRIPT`) became `settings["block_scripts"]`
+(keys of `engine.SCRIPTS`: chinese, japanese, korean, cyrillic, arabic, hebrew,
+greek, thai, indic; default all), a multi-select in *Blocklists*. It now also
+applies to the personal pool (it used to be search-only). Words and scripts are
+tested on the title plus **all** artist names (it used to be the first artist
+only, so a guest artist slipped through).
+
+Still hardcoded, deliberately: `HISTORY_KEEP_DAYS` (180), search depth cap
+(offset+limit ≤ 1000 is Spotify's limit), the top-tracks time range rotating
+per weekday, the date-seeded RNG, `COVER_VERSION`, and the design choices "seeds
+bypass all filters except block_tracks" and "sources skip the popularity floor".
+
+**Kids' music was only half blocked.** `block_terms` had `kinderlied`,
+`children's`, `kids music`, `nursery`, `lullab` — title words only. Spotify tags
+the Dutch kids' acts by *genre*: Juf Roos, Kinderen voor Kinderen, Dirk Scheele,
+Kabouter Plop, Samson & Gert, Nijntje, Studio 100, "Liedjes voor kinderen" all
+have `children's music`; CoComelon, Super Simple Songs, Pinkfong also `lullaby`
+(measured 2026-11-16). Both genres were added to `block_genres`. ("Yaëlle" from
+the earlier note could not be re-found by name search.)
+
+**Default additions for existing installs** (`manager.DEFAULT_ADDITIONS`):
+`merge_defaults` never touches existing lists, so new default *items* would
+never reach an installed HA. Each `defaults_version` now lists the items it
+adds; an install below that version gets exactly those items once. Trap found
+by the test: `defaults_version` must be read **before** missing top-level keys
+are copied from the defaults, or the install inherits the new version number
+and skips the additions.
+
 ## Settings (HA options flow / `defaults.json`)
 
 Settings are a dict (schema = `defaults.json`): `general`, `days`, the lists
