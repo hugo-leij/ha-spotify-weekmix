@@ -374,6 +374,12 @@ It passed locally and on the first CI run, then failed on the second. Note that
 CI runs twice per release (branch push + tag), so check **all** runs of a
 commit, not just the first.
 
+Second flaky test (fixed 2026-11-16): the daily-schedule test used the real
+clock to compute "next 05:30". Now it freezes time (`freezer`) — but then the
+test token (`expires_at = time.time()+3600`) can be expired at the frozen time
+(the harness runs in US/Pacific), setup tries to refresh and fails. The test
+therefore gives its token a 10-day expiry.
+
 Bugs the HA tests caught that would have hit the real UI: `NumberSelector`
 rejects `unit_of_measurement=None` (options flow crashed); the scheduled run
 used "now" instead of the scheduled time to pick the weekday.

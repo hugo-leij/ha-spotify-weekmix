@@ -195,24 +195,33 @@ async def test_settings_persist_across_reload(hass, entry, removed):
     assert "Blijf Weg" in entry.runtime_data.settings["block_artists"]
 
 
-async def test_auto_refresh_switch_schedules_daily_run(hass, entry, built):
+async def test_auto_refresh_switch_schedules_daily_run(hass, entry, built, freezer):
+    # Klok vastzetten: met de echte klok was deze test af en toe rood op GitHub.
+    import datetime as _dt
+    tz = dt_util.get_default_time_zone()
+    # Vandaag 03:00 (niet een vaste datum: dan zou het test-token al verlopen zijn).
+    base = dt_util.now().astimezone(tz).replace(hour=3, minute=0, second=0, microsecond=0)
+    freezer.move_to(base)
+    # Token lang geldig maken: de vastgezette klok mag het niet laten verlopen.
+    hass.config_entries.async_update_entry(entry, data={**entry.data, "token": {
+        **entry.data["token"], "expires_at": base.timestamp() + 10 * 86400}})
     mgr = await setup(hass, entry)
     switch = next(s.entity_id for s in hass.states.async_all("switch"))
     await mgr.async_update_settings(lambda s: s["ha"].update(refresh_time="05:30:00"))
     await hass.services.async_call("switch", "turn_on", {"entity_id": switch}, blocking=True)
     assert hass.states.get(switch).state == "on"
-    now = dt_util.now()
-    fire = now.replace(hour=5, minute=30, second=0, microsecond=0)
-    if fire <= now:
-        fire = fire + __import__("datetime").timedelta(days=1)
+    fire = base.replace(hour=5, minute=30)
+    freezer.move_to(fire)
     async_fire_time_changed(hass, fire)
-    await hass.async_block_till_done()
-    assert len(built) == 1 and built[0][0] == ["maandag", "dinsdag", "woensdag", "donderdag",
-                                               "vrijdag", "zaterdag", "zondag"][fire.weekday()]
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert built == [(["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag",
+                       "zondag"][fire.weekday()], False)]
     # uitzetten -> geen run meer
     await hass.services.async_call("switch", "turn_off", {"entity_id": switch}, blocking=True)
-    async_fire_time_changed(hass, fire + __import__("datetime").timedelta(days=1))
-    await hass.async_block_till_done()
+    nxt = fire + _dt.timedelta(days=1)
+    freezer.move_to(nxt)
+    async_fire_time_changed(hass, nxt)
+    await hass.async_block_till_done(wait_background_tasks=True)
     assert len(built) == 1
 
 
