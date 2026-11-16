@@ -303,7 +303,8 @@ async def test_day_form_rebuild_now(hass, entry, built):
         "target": mgr.settings["days"]["vrijdag"]["target"], "searches": "party genre:dance-pop",
         "rebuild_now": True})
     assert r["type"] is FlowResultType.CREATE_ENTRY
-    await hass.async_block_till_done()
+    # De opbouw loopt als achtergrondtaak: daar expliciet op wachten (anders flaky).
+    await hass.async_block_till_done(wait_background_tasks=True)
     assert built == [("vrijdag", False)]
     assert mgr.settings["days"]["vrijdag"]["searches"] == ["party genre:dance-pop"]
 
