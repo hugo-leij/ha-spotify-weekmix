@@ -331,6 +331,13 @@ SPOTIFY_LIVE_CACHE=<fresh .cache copy> /tmp/hatest/bin/python -m pytest tests/te
 itself; and the token in the cache must be fresh, because HA's own token refresh
 goes through aiohttp, which the harness also blocks.
 
+Flaky-test trap: anything started with `hass.async_create_background_task`
+(the day form's *rebuild_now*) is **not** awaited by
+`hass.async_block_till_done()`; use `async_block_till_done(wait_background_tasks=True)`.
+It passed locally and on the first CI run, then failed on the second. Note that
+CI runs twice per release (branch push + tag), so check **all** runs of a
+commit, not just the first.
+
 Bugs the HA tests caught that would have hit the real UI: `NumberSelector`
 rejects `unit_of_measurement=None` (options flow crashed); the scheduled run
 used "now" instead of the scheduled time to pick the weekday.
