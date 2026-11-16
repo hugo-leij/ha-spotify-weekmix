@@ -20,8 +20,8 @@ class MixEntity(Entity):
         self._attr_unique_id = f"{mgr.entry.entry_id}_{key}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, mgr.entry.entry_id)},
-            name=f"Spotify Weekmix ({mgr.entry.title})",
-            manufacturer="Spotify Weekmix",
+            name=f"Spotify weekmix ({mgr.entry.title})",
+            manufacturer="Spotify weekmix",
             entry_type=DeviceEntryType.SERVICE,
         )
 

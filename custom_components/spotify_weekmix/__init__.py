@@ -1,4 +1,4 @@
-"""Spotify Weekmix: elke dag een verse, lange playlist zonder dubbele nummers."""
+"""Spotify weekmix: elke dag een verse, lange playlist zonder dubbele nummers."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def _manager(hass: HomeAssistant, call: ServiceCall) -> MixManager:
     if wanted:
         entries = [e for e in entries if e.entry_id == wanted]
     if not entries:
-        raise ServiceValidationError("Spotify Weekmix is not set up or not loaded.")
+        raise ServiceValidationError("Spotify weekmix is not set up or not loaded.")
     if len(entries) > 1 and not wanted:
         raise ServiceValidationError("Multiple accounts configured: pass config_entry_id.")
     return entries[0].runtime_data
@@ -126,7 +126,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SpotifyMixConfigEntry) -
                 _LOGGER.error("Daily refresh failed: %s", err)
 
         mgr._unsub_time = async_track_time_change(hass, _run, hour=h, minute=m, second=s)
-        _LOGGER.info("Spotify Weekmix: daily refresh at %02d:%02d:%02d", h, m, s)
+        _LOGGER.info("Spotify weekmix: daily refresh at %02d:%02d:%02d", h, m, s)
 
     mgr.reschedule = _schedule
     _schedule()

@@ -33,7 +33,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Spotify Weekmix",
+        "title": "Spotify weekmix",
         "menu_options": {
           "players": "Spelers & planning",
           "day_select": "Een dag instellen",
@@ -112,7 +112,7 @@
         },
         "data_description": {
           "playlist_name": "Zet het woord dag tussen accolades op de plek waar de naam van de dag moet komen (zo staat het standaard al).",
-          "covers": "Zet één keer de Weekmix-afbeelding op de playlist van elke dag. Vraagt één keer opnieuw inloggen (extra Spotify-recht). Een afbeelding die je daarna zelf instelt, blijft staan."
+          "covers": "Zet één keer de weekmix-afbeelding op de playlist van elke dag. Vraagt één keer opnieuw inloggen (extra Spotify-recht). Een afbeelding die je daarna zelf instelt, blijft staan."
         }
       }
     }

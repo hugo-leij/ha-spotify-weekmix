@@ -26,7 +26,8 @@ Committing and pushing are different: those still need to be asked for.
 
 ## Name
 
-Public name **Spotify Weekmix**, domain `spotify_weekmix` (renamed from the
+Public name **Spotify weekmix** — *weekmix* is always written in lowercase in
+text (user's preference, 2026-11-16; the images may use capitals) — domain `spotify_weekmix` (renamed from the
 working name "Spotify Dagmix"/`spotify_mix` on 2026-11-15, before any install,
 so no migration exists or is needed). Repo: `hugo-leij/ha-spotify-weekmix`;
 README badges, `manifest.json` URLs and the my.home-assistant links use that
@@ -60,7 +61,7 @@ ever repeating a song within a day, and — since 2026-11-13 — with a play
 history so the same weekday does not get the same songs every week.
 
 Since 2026-11-13 it is a **Home Assistant custom integration** (`spotify_weekmix`,
-"Spotify Weekmix", HACS-shaped) instead of a script run by AppDaemon:
+"Spotify weekmix", HACS-shaped) instead of a script run by AppDaemon:
 
 | File | Role |
 |---|---|

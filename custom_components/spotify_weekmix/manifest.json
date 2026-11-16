@@ -1,6 +1,6 @@
 {
   "domain": "spotify_weekmix",
-  "name": "Spotify Weekmix",
+  "name": "Spotify weekmix",
   "codeowners": [
     "@hugo-leij"
   ],
@@ -15,5 +15,5 @@
   "requirements": [
     "spotipy==2.26.0"
   ],
-  "version": "0.2.0"
+  "version": "0.2.1"
 }

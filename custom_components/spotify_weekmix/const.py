@@ -1,4 +1,4 @@
-"""Constanten voor Spotify Weekmix."""
+"""Constanten voor Spotify weekmix."""
 
 DOMAIN = "spotify_weekmix"
 

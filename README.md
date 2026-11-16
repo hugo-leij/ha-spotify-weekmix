@@ -1,6 +1,6 @@
-<p align="center"><img src="custom_components/spotify_weekmix/brand/logo@2x.png" alt="Weekmix" height="96"></p>
+<p align="center"><img src="custom_components/spotify_weekmix/brand/logo@2x.png" alt="weekmix" height="96"></p>
 
-# Spotify Weekmix for Home Assistant
+# Spotify weekmix for Home Assistant
 
 [![HACS Custom][hacs-badge]][hacs]
 [![GitHub Release][release-badge]][releases]
@@ -18,7 +18,7 @@ set for that day, from playlists, searches and hand-picked tracks — and it
 remembers what played recently, so Wednesday doesn't sound like last Wednesday.
 
 [![Open your Home Assistant instance and open this repository in HACS.][my-hacs-badge]][my-hacs]
-[![Open your Home Assistant instance and start setting up Spotify Weekmix.][my-flow-badge]][my-flow]
+[![Open your Home Assistant instance and start setting up Spotify weekmix.][my-flow-badge]][my-flow]
 
 ---
 
@@ -47,7 +47,7 @@ remembers what played recently, so Wednesday doesn't sound like last Wednesday.
 - **Everything configurable in the UI**: per day (target playlist, source
   playlists, search terms, seeds, minimum year, rap cap), blocklists, players,
   schedule and general settings.
-- **A cover per day.** Each playlist gets its own Weekmix cover (once; a
+- **A cover per day.** Each playlist gets its own weekmix cover (once; a
   cover you set yourself afterwards is left alone).
 - **Sensors** per day (last refresh, tracks, hours, artists, seeds used,
   repeats) and a status sensor with the running version and the last error.
@@ -56,7 +56,7 @@ remembers what played recently, so Wednesday doesn't sound like last Wednesday.
 
 Since 27 November 2024 the Spotify Web API no longer exposes Spotify-owned
 playlists (Daily Mixes, daylists, radios, editorial lists like "Feel Good
-Friday"), recommendations, related artists or audio features. Weekmix builds
+Friday"), recommendations, related artists or audio features. weekmix builds
 each day from what still works: regular user playlists, search, your own top
 and recently played tracks, and individual tracks you pick.
 
@@ -71,7 +71,7 @@ and recently played tracks, and individual tracks you pick.
 > **Spotify's 2026 Development Mode rules.** Apps created after 11 February 2026
 > need a **Premium** owner, allow **max. 5 users**, and get a reduced API (no
 > track popularity, no batch lookups, max. 10 search results per request, and
-> only playlists you own or collaborate on are readable). Weekmix still works
+> only playlists you own or collaborate on are readable). weekmix still works
 > on such an app, but without the popularity filter and without *source
 > playlists*, and slower. **If you already have an older Spotify app, reuse it.**
 
@@ -82,7 +82,7 @@ and recently played tracks, and individual tracks you pick.
 1. Click the *Open in HACS* button above, or in HACS go to **⋮ → Custom
    repositories** and add `https://github.com/hugo-leij/ha-spotify-weekmix` as type
    **Integration**.
-2. Download **Spotify Weekmix** and restart Home Assistant.
+2. Download **Spotify weekmix** and restart Home Assistant.
 
 ### Manual
 
@@ -97,7 +97,7 @@ and restart Home Assistant.
    https://my.home-assistant.io/redirect/oauth
    ```
 2. In Home Assistant: **Settings → Devices & services → Add integration →
-   Spotify Weekmix** (or use the *start setup* button above).
+   Spotify weekmix** (or use the *start setup* button above).
 3. Enter the app's **Client ID** and **Client Secret**, then log in with the
    house account and click *Agree*.
 4. Open the integration's **Configure** menu, pick your players under
@@ -146,7 +146,7 @@ overwritten by updates.
 
 ![Covers](docs/covers.jpg)
 
-Weekmix uploads its own cover to each day's playlist once. This needs the
+weekmix uploads its own cover to each day's playlist once. This needs the
 Spotify permission `ugc-image-upload`. Logins made with version 0.1.x don't
 have it: Home Assistant then shows **Re-authenticate** — log in again with the
 same account. Until then the playlists are still rebuilt, just without a
@@ -212,7 +212,7 @@ automation:
 | Symptom | Cause / fix |
 |---|---|
 | Same songs every week | Check the day sensor's `date`: is the daily refresh on? If the date is current but `repeats` is high, the day doesn't have enough material — add search terms or a source playlist. |
-| Shuffle doesn't feel random | Spotify shuffle is on. Pick your players under *Players & schedule*; Weekmix turns it off after each refresh. |
+| Shuffle doesn't feel random | Spotify shuffle is on. Pick your players under *Players & schedule*; weekmix turns it off after each refresh. |
 | `INVALID_CLIENT: Invalid redirect URI` | Add `https://my.home-assistant.io/redirect/oauth` to the app's Redirect URIs. |
 | `403 – user not registered` | Add the account under *User Management* in the Spotify app (Development Mode). |
 | `404` on a source playlist | It's a Spotify-owned playlist (`37i9dQ…`); those can't be read. Use a regular playlist, search terms or seeds. |

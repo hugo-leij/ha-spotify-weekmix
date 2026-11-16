@@ -1,5 +1,5 @@
 """
-daily_playlists.py — command-line versie van Spotify Weekmix.
+daily_playlists.py — command-line versie van Spotify weekmix.
 
 De eigenlijke logica staat in custom_components/spotify_weekmix/engine.py; die
 wordt ook door de Home Assistant-integratie gebruikt. Dit script is er om op

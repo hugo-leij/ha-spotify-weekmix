@@ -1,4 +1,4 @@
-"""Spotify Weekmix: de motor.
+"""Spotify weekmix: de motor.
 
 Bouwt per weekdag een verse, lange playlist (~18 uur) zonder dubbele nummers,
 met een geheugen zodat dezelfde dag niet elke week dezelfde nummers krijgt.

@@ -33,7 +33,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Spotify Weekmix",
+        "title": "Spotify weekmix",
         "menu_options": {
           "players": "Players & schedule",
           "day_select": "Configure a day",
@@ -112,7 +112,7 @@
         },
         "data_description": {
           "playlist_name": "Put the word dag between curly braces where the day name should go (the default already does).",
-          "covers": "Puts the Weekmix cover on each day's playlist once. Requires logging in again once (extra Spotify permission). A cover you set yourself afterwards is left alone."
+          "covers": "Puts the weekmix cover on each day's playlist once. Requires logging in again once (extra Spotify permission). A cover you set yourself afterwards is left alone."
         }
       }
     }
