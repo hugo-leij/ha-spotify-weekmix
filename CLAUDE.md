@@ -252,6 +252,15 @@ was removed by *block current track* does **not** come back.
 Templates in `tap_action` data aren't rendered by built-in cards — hence the
 README's script-with-`index` pattern.
 
+**Blocking is fire-and-forget since 0.4.1.** A tap on a block button took ~14 s
+(user measured 07:51:29 → 07:51:43): `remove_from_lists` reads and rewrites all
+seven playlists (~330 tracks each, 4 pages) before the sensor updated. Now:
+save → `notify()` → skip → `_remove_in_background()`. The service response
+says `removing_from_playlists` instead of a `removed` count; background
+failures set `last_error` (status sensor = `error`). Known edge: a block
+during a running rebuild can let that one build still contain the track — the
+next build honours the blocklist anyway.
+
 ## Hardcoded vs. configurable (audit 2026-11-16)
 
 Everything that *filters* is now a setting. 0.3.0 moved the last one: the

@@ -150,7 +150,8 @@ async def test_block_current_artist_from_player(hass, entry, removed):
     hass.states.async_set("media_player.woonkamer", "playing",
                           {"media_artist": "Eves Laurent, Kevin", "media_title": "SOFT LEVEN"})
     res = await hass.services.async_call(DOMAIN, "block_artist", {}, blocking=True, return_response=True)
-    assert res == {"artist": "Eves Laurent", "removed": 3}
+    assert res == {"artist": "Eves Laurent", "removing_from_playlists": True}
+    await hass.async_block_till_done(wait_background_tasks=True)
     assert mgr.settings["block_artists"].count("Eves Laurent") == 1      # stond er al: niet dubbel
     assert removed == [{"artist": "Eves Laurent"}]
     assert len(nxt) == 1
@@ -175,6 +176,7 @@ async def test_block_current_track_sonos_and_seed_removed(hass, entry, removed):
     res = await hass.services.async_call(DOMAIN, "block_track", {}, blocking=True, return_response=True)
     assert f"spotify:track:{seed}" in res["blocked"] and "some one|song" in res["blocked"]
     assert seed not in mgr.settings["days"]["woensdag"]["seeds"]
+    await hass.async_block_till_done(wait_background_tasks=True)
     assert removed == [{"track_uri": f"spotify:track:{seed}"}]
 
 
@@ -405,3 +407,45 @@ async def test_no_players_configured_no_listening(hass, entry):
     await hass.async_block_till_done()
     st, tracks = _recent(hass)
     assert tracks == [] and st.state in ("unknown", None)
+
+
+
+async def test_block_returns_before_spotify_removal_finishes(hass, entry):
+    """De knop/sensor mag niet wachten op het weghalen uit de playlists (~15 s)."""
+    import asyncio
+    import threading
+    gate = threading.Event()
+    calls = []
+
+    def slow_remove(self, **kw):
+        gate.wait(5)                     # Spotify 'hangt' tot we het vrijgeven
+        calls.append(kw)
+        return 1
+
+    mgr = await setup(hass, entry)
+    await mgr.async_update_settings(lambda s: s["ha"].update(media_players=["media_player.woonkamer"]))
+    mgr.reschedule()
+    nxt = async_mock_service(hass, "media_player", "media_next_track")
+    _play(hass, "media_player.woonkamer", "4uLU6hMCjMI75M1A2tKUQC", "Blinding Lights", "The Weeknd")
+    await hass.async_block_till_done()
+    with patch.object(MixEngine, "remove_from_lists", slow_remove):
+        res = await asyncio.wait_for(hass.services.async_call(
+            DOMAIN, "block_track", {}, blocking=True, return_response=True), timeout=2)
+        assert res["removing_from_playlists"] is True
+        _, tracks = _recent(hass)
+        assert tracks[0]["blocked"] and len(nxt) == 1 and calls == []   # al rood + overgeslagen
+        gate.set()
+        await hass.async_block_till_done(wait_background_tasks=True)
+    assert calls == [{"track_uri": "spotify:track:4uLU6hMCjMI75M1A2tKUQC"}]
+
+
+async def test_background_removal_error_shows_on_status(hass, entry):
+    def boom(self, **kw):
+        raise RuntimeError("Spotify stuk")
+
+    await setup(hass, entry)
+    with patch.object(MixEngine, "remove_from_lists", boom):
+        await hass.services.async_call(DOMAIN, "block_artist", {"artist": "X"}, blocking=True, return_response=True)
+        await hass.async_block_till_done(wait_background_tasks=True)
+    st = hass.states.get("sensor.spotify_weekmix_saints_status")
+    assert st.state == "error" and "Spotify stuk" in st.attributes["last_error"]

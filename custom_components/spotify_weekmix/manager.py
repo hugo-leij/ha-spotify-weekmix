@@ -242,11 +242,11 @@ class MixManager:
         if name.lower() not in {a.lower() for a in lst}:
             lst.append(name)
         await self.async_save()
-        removed = await self._remove(artist=name)
+        self.notify()                                 # sensor/kaart meteen bijgewerkt
         await self._skip(player)
-        self.notify()
-        _LOGGER.info("Artist blocked: %s (%s tracks removed from the playlists)", name, removed)
-        return {"artist": name, "removed": removed}
+        self._remove_in_background(f"artist {name}", artist=name)
+        _LOGGER.info("Artist blocked: %s", name)
+        return {"artist": name, "removing_from_playlists": True}
 
     async def async_block_track(self, track: str | None, entity_id: str | None) -> dict[str, Any]:
         player = None
@@ -274,10 +274,11 @@ class MixManager:
         for cfg in self.settings["days"].values():
             cfg["seeds"] = [s for s in cfg.get("seeds", []) if engine.track_id(s) != tid] if tid else cfg.get("seeds", [])
         await self.async_save()
-        removed = await self._remove(track_uri=f"spotify:track:{tid}" if tid else None)
+        self.notify()                                 # sensor/kaart meteen bijgewerkt
         await self._skip(player)
-        self.notify()
-        return {"blocked": entries, "removed": removed}
+        if tid:
+            self._remove_in_background(f"track {tid}", track_uri=f"spotify:track:{tid}")
+        return {"blocked": entries, "removing_from_playlists": bool(tid)}
 
     # ---------- laatst gespeeld (uit de spelers in HA, geen Spotify-API) ----------
     RECENT_MAX = 10
@@ -369,6 +370,23 @@ class MixManager:
         sp = await self._client()
         eng = self._engine(sp, self.settings, {})
         return await self.hass.async_add_executor_job(lambda: eng.remove_from_lists(**kwargs))
+
+    def _remove_in_background(self, what: str, **kwargs) -> None:
+        """Uit alle zeven playlists halen kost ~15 s Spotify-API (7 lijsten lezen
+        en bijwerken). Daar laten we de knop/service niet op wachten: de blocklist
+        is al opgeslagen, dus de volgende verversing slaat het nummer hoe dan ook
+        over. Een fout komt in het log en in de Status-sensor."""
+
+        async def _run() -> None:
+            try:
+                n = await self._remove(**kwargs)
+                _LOGGER.info("Removed %s from the playlists (%s tracks)", what, n)
+            except Exception as err:  # noqa: BLE001
+                self.last_error = f"removing {what}: {err}"
+                _LOGGER.warning("Removing %s from the playlists failed: %s", what, err)
+                self.notify()
+
+        self.hass.async_create_background_task(_run(), f"spotify_weekmix remove {what}")
 
     # ---------- instellingen wijzigen ----------
     async def async_update_settings(self, mutate) -> None:

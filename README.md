@@ -192,6 +192,11 @@ Entity IDs are always English; names follow your Home Assistant language
 | `spotify_weekmix.unblock_track` | `track` (Spotify link/URI) |
 | `spotify_weekmix.unblock_artist` | `artist` |
 
+`block_track` and `block_artist` return immediately: the blocklist is saved,
+sensors update and the player skips right away; removing the track(s) from all
+seven playlists happens in the background (~15 s of Spotify API calls). A
+failure there shows up on the status sensor.
+
 All services return a response, e.g. the result of a rebuild:
 
 ```yaml
