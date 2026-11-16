@@ -233,8 +233,10 @@ automation:
 `sensor.spotify_weekmix_<account>_recently_played` follows the players selected
 under *Players & schedule*: every new Spotify track that starts playing is added
 at the top (radio/TV and grouped speakers playing the same track are ignored).
-It reads the players' state in Home Assistant — no Spotify API calls — and
-survives restarts. Each item in the `tracks` attribute looks like:
+It reads the players' state in Home Assistant and survives restarts. The album
+cover is looked up once per new track via Spotify's public oEmbed endpoint (no
+login, doesn't count against your app's API quota); only if that fails is one
+Web API call used. Each item in the `tracks` attribute looks like:
 
 ```yaml
 track_id: 4uLU6hMCjMI75M1A2tKUQC
@@ -243,7 +245,7 @@ url: https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC
 title: Blinding Lights
 artist: The Weeknd
 album: After Hours
-image: /api/media_player_proxy/...
+image: https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02...   # fixed album cover (300 px)
 player: media_player.living_room
 played_at: "2026-11-16T09:41:03+00:00"
 blocked: false          # track is on the blocklist

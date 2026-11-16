@@ -247,6 +247,15 @@ the same id as the newest entry is ignored (grouped speakers, pause/play).
 Use `last_updated`, not `last_changed`: playing→playing with a new track
 doesn't change `last_changed`. Stored in `.storage` (`recent`), 10 items.
 `blocked`/`artist_blocked` are computed live from the blocklists.
+**Cover image trap (fixed in 0.4.2, found by the user):** the first version
+stored the player's `entity_picture` — `/api/media_player_proxy/<player>?token=…&cache=…`.
+That is a proxy to *whatever the player shows now*, and the token expires
+within minutes: a list showed the same current cover on every row, or nothing.
+Now `image` is a fixed Spotify CDN URL, fetched once per new track via the
+public oEmbed endpoint `open.spotify.com/oembed?url=<track url>` →
+`thumbnail_url` (300 px, no auth, no app quota — the user wants no extra API
+traffic), falling back to one `sp.track()` call. Items loaded from storage with a
+non-http image are re-fetched at startup.
 `unblock_track` removes the URI and the matching `artist|title` key; a seed that
 was removed by *block current track* does **not** come back.
 Templates in `tap_action` data aren't rendered by built-in cards — hence the

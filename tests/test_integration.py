@@ -449,3 +449,55 @@ async def test_background_removal_error_shows_on_status(hass, entry):
         await hass.async_block_till_done(wait_background_tasks=True)
     st = hass.states.get("sensor.spotify_weekmix_saints_status")
     assert st.state == "error" and "Spotify stuk" in st.attributes["last_error"]
+
+
+
+async def test_recent_image_is_fixed_spotify_cover_not_player_proxy(hass, entry, aioclient_mock):
+    aioclient_mock.get("https://open.spotify.com/oembed", json={
+        "thumbnail_url": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02aaaa"})
+    mgr = await setup(hass, entry)
+    await mgr.async_update_settings(lambda s: s["ha"].update(media_players=["media_player.woonkamer"]))
+    mgr.reschedule()
+    hass.states.async_set("media_player.woonkamer", "playing", {
+        "media_content_id": "x-sonos-spotify:spotify%3atrack%3a4uLU6hMCjMI75M1A2tKUQC?sid=9",
+        "media_title": "Blinding Lights", "media_artist": "The Weeknd",
+        "entity_picture": "/api/media_player_proxy/media_player.woonkamer?token=abc&cache=1"})
+    await hass.async_block_till_done()
+    _, tracks = _recent(hass)
+    assert tracks[0]["image"] == "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02aaaa"
+    assert "media_player_proxy" not in str(tracks)
+
+
+async def test_recent_image_falls_back_to_web_api(hass, entry, aioclient_mock):
+    aioclient_mock.get("https://open.spotify.com/oembed", status=500)
+
+    class FakeSp:
+        def track(self, tid):
+            return {"album": {"images": [{"url": "https://i.scdn.co/640"}, {"url": "https://i.scdn.co/300"},
+                                         {"url": "https://i.scdn.co/64"}]}}
+
+    mgr = await setup(hass, entry)
+    await mgr.async_update_settings(lambda s: s["ha"].update(media_players=["media_player.woonkamer"]))
+    mgr.reschedule()
+
+    async def fake_client():
+        return FakeSp()
+
+    mgr._client = fake_client
+    _play(hass, "media_player.woonkamer", "4uLU6hMCjMI75M1A2tKUQC", "Blinding Lights", "The Weeknd")
+    await hass.async_block_till_done()
+    _, tracks = _recent(hass)
+    assert tracks[0]["image"] == "https://i.scdn.co/300"
+
+
+async def test_old_proxy_images_replaced_on_startup(hass, entry, aioclient_mock):
+    aioclient_mock.get("https://open.spotify.com/oembed", json={"thumbnail_url": "https://i.scdn.co/fixed"})
+    mgr = await setup(hass, entry)
+    mgr.recent = [{"track_id": "4uLU6hMCjMI75M1A2tKUQC", "uri": "spotify:track:4uLU6hMCjMI75M1A2tKUQC",
+                   "url": "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC",
+                   "title": "X", "artist": "Y", "image": "/api/media_player_proxy/x?token=1"}]
+    await mgr.async_save()
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    _, tracks = _recent(hass)
+    assert tracks[0]["image"] == "https://i.scdn.co/fixed"

@@ -13,6 +13,7 @@ from spotipy import Spotify
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_entry_oauth2_flow
@@ -112,6 +113,11 @@ class MixManager:
         self.history = data.get("history") or {}
         self.results = data.get("results") or {}
         self.recent = data.get("recent") or []
+        # Oude items (vóór 0.4.2) hebben een tijdelijke speler-proxylink: één keer vervangen.
+        for item in self.recent:
+            if not str(item.get("image") or "").startswith("http"):
+                item["image"] = None
+                self.hass.async_create_task(self._fill_image(item))
         if not data:
             await self.async_save()
 
@@ -319,13 +325,44 @@ class MixManager:
             "title": attrs.get("media_title"),
             "artist": attrs.get("media_artist"),
             "album": attrs.get("media_album_name"),
-            "image": attrs.get("entity_picture"),
+            # NIET entity_picture: dat is een proxy naar wat de speler NU toont, met
+            # een token dat na minuten verloopt. De vaste hoes komt via _fill_image.
+            "image": None,
             "player": new.entity_id,
             "played_at": new.last_updated.isoformat(),   # last_changed blijft staan bij playing->playing
         })
         del self.recent[self.RECENT_MAX:]
         self.notify()
         self.hass.async_create_task(self.async_save())
+        self.hass.async_create_task(self._fill_image(self.recent[0]))
+
+    OEMBED_URL = "https://open.spotify.com/oembed"
+
+    async def _fill_image(self, item: dict) -> None:
+        """Vaste albumhoes (i.scdn.co) bij een nummer zoeken.
+
+        Eerst via Spotify's openbare oEmbed (geen login, telt niet mee voor de
+        API-limiet van de app); lukt dat niet, dan één Web API-aanroep."""
+        url = None
+        try:
+            session = async_get_clientsession(self.hass)
+            async with session.get(self.OEMBED_URL, params={"url": item["url"]}, timeout=10) as resp:
+                if resp.status == 200:
+                    url = (await resp.json(content_type=None)).get("thumbnail_url")
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug("oEmbed cover for %s failed: %s", item.get("track_id"), err)
+        if not url:
+            try:
+                sp = await self._client()
+                data = await self.hass.async_add_executor_job(sp.track, item["track_id"])
+                imgs = (data.get("album") or {}).get("images") or []
+                url = (imgs[1] if len(imgs) > 1 else imgs[0])["url"] if imgs else None
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("API cover for %s failed: %s", item.get("track_id"), err)
+        if url:
+            item["image"] = url
+            self.notify()
+            await self.async_save()
 
     def is_track_blocked(self, item: dict) -> bool:
         bt = self.settings.get("block_tracks", [])
