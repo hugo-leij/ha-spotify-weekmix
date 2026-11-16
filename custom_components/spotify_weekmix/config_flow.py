@@ -145,6 +145,8 @@ class MixOptionsFlow(OptionsFlow):
                 v = user_input.get(k)
                 return int(v) if v not in (None, "") else None
 
+            rebuild_now = bool(user_input.get("rebuild_now"))
+
             def mutate(s):
                 c = s["days"][day]
                 c["target"] = (user_input.get("target") or "").strip()
@@ -155,7 +157,12 @@ class MixOptionsFlow(OptionsFlow):
                 c["min_year"] = opt_int("min_year")
                 c["max_rap"] = opt_int("max_rap")
                 c["seed_weeks"] = opt_int("seed_weeks")
-            return await self._save(mutate)
+            result = await self._save(mutate)
+            if rebuild_now:
+                # Op de achtergrond: duurt ~1 minuut, het venster sluit meteen.
+                self.hass.async_create_background_task(
+                    self.mgr.async_rebuild([day]), f"spotify_weekmix rebuild {day}")
+            return result
         schema = vol.Schema({
             vol.Optional("target"): sel.TextSelector(),
             vol.Optional("description"): sel.TextSelector(),
@@ -165,6 +172,7 @@ class MixOptionsFlow(OptionsFlow):
             vol.Optional("min_year"): _num(1900, 2100),
             vol.Optional("max_rap"): _num(0, 500),
             vol.Optional("seed_weeks"): _num(1, 12),
+            vol.Optional("rebuild_now", default=False): sel.BooleanSelector(),
         })
         suggested = {
             "target": cfg.get("target", ""), "description": cfg.get("description", ""),
@@ -206,6 +214,7 @@ class MixOptionsFlow(OptionsFlow):
                 for k in ints:
                     gg[k] = int(user_input[k])
                 gg["unique_titles"] = bool(user_input["unique_titles"])
+                gg["covers"] = bool(user_input["covers"])
                 gg["market"] = user_input["market"].strip().upper()
                 gg["playlist_name"] = user_input["playlist_name"]
             return await self._save(mutate)
@@ -216,6 +225,7 @@ class MixOptionsFlow(OptionsFlow):
             vol.Required("rest_days", default=g["rest_days"]): _num(0, 180, 1, "d"),
             vol.Required("seed_weeks", default=g["seed_weeks"]): _num(1, 12),
             vol.Required("unique_titles", default=g["unique_titles"]): sel.BooleanSelector(),
+            vol.Required("covers", default=g.get("covers", True)): sel.BooleanSelector(),
             vol.Required("min_popularity", default=g["min_popularity"]): _num(0, 100),
             vol.Required("personal_max", default=g["personal_max"]): _num(0, 200),
             vol.Required("search_pages", default=g["search_pages"]): _num(1, 19),

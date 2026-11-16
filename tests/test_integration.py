@@ -39,15 +39,19 @@ async def creds(hass: HomeAssistant):
     await async_import_client_credential(hass, DOMAIN, ClientCredential(CLIENT_ID, CLIENT_SECRET), "cred")
 
 
-@pytest.fixture
-def entry(hass: HomeAssistant, creds) -> MockConfigEntry:
+def make_entry(hass, scope="playlist-modify-private ugc-image-upload"):
     e = MockConfigEntry(
         domain=DOMAIN, title="Saints", unique_id="saints",
         data={"auth_implementation": "cred",
               "token": {"access_token": "at", "refresh_token": "rt", "token_type": "Bearer",
-                        "expires_in": 3600, "expires_at": time.time() + 3600}})
+                        "expires_in": 3600, "expires_at": time.time() + 3600, "scope": scope}})
     e.add_to_hass(hass)
     return e
+
+
+@pytest.fixture
+def entry(hass: HomeAssistant, creds) -> MockConfigEntry:
+    return make_entry(hass)
 
 
 @pytest.fixture
@@ -248,7 +252,7 @@ async def test_options_flow_all_steps(hass, entry):
     g = dict(mgr.settings["general"])
     g.update(target_hours=14, max_per_artist=3, market="be")
     r = await hass.config_entries.options.async_configure(r["flow_id"], {k: g[k] for k in (
-        "target_hours", "max_per_artist", "artist_gap", "rest_days", "seed_weeks", "unique_titles",
+        "target_hours", "max_per_artist", "artist_gap", "rest_days", "seed_weeks", "unique_titles", "covers",
         "min_popularity", "personal_max", "search_pages", "market", "playlist_name")})
     assert mgr.settings["general"]["target_hours"] == 14 and mgr.settings["general"]["market"] == "BE"
 
@@ -271,3 +275,44 @@ async def test_oauth_config_flow(hass, creds, hass_client_no_auth, aioclient_moc
         result = await hass.config_entries.flow.async_configure(result["flow_id"])
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Saints" and result["result"].unique_id == "saints"
+
+
+async def test_old_login_without_cover_scope_asks_reauth_once(hass, creds, built):
+    entry = make_entry(hass, scope="playlist-modify-private")        # login van vóór 0.2.0
+    await setup(hass, entry)
+    for _ in range(2):
+        await hass.services.async_call(DOMAIN, "rebuild", {"day": "monday"}, blocking=True, return_response=True)
+    await hass.async_block_till_done()
+    flows = [f for f in hass.config_entries.flow.async_progress() if f["context"]["source"] == "reauth"]
+    assert len(flows) == 1 and len(built) == 2        # verversen gaat gewoon door
+
+
+async def test_login_with_cover_scope_no_reauth(hass, entry, built):
+    await setup(hass, entry)
+    await hass.services.async_call(DOMAIN, "rebuild", {"day": "monday"}, blocking=True, return_response=True)
+    await hass.async_block_till_done()
+    assert not [f for f in hass.config_entries.flow.async_progress() if f["context"]["source"] == "reauth"]
+
+
+async def test_day_form_rebuild_now(hass, entry, built):
+    mgr = await setup(hass, entry)
+    r = await hass.config_entries.options.async_init(entry.entry_id)
+    r = await hass.config_entries.options.async_configure(r["flow_id"], {"next_step_id": "day_select"})
+    r = await hass.config_entries.options.async_configure(r["flow_id"], {"day": "vrijdag"})
+    r = await hass.config_entries.options.async_configure(r["flow_id"], {
+        "target": mgr.settings["days"]["vrijdag"]["target"], "searches": "party genre:dance-pop",
+        "rebuild_now": True})
+    assert r["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    assert built == [("vrijdag", False)]
+    assert mgr.settings["days"]["vrijdag"]["searches"] == ["party genre:dance-pop"]
+
+
+async def test_token_without_scope_field_tries_covers_without_reauth(hass, creds, built):
+    entry = make_entry(hass, scope=None)
+    del entry.data["token"]["scope"]
+    mgr = await setup(hass, entry)
+    assert mgr._has_cover_scope()
+    await hass.services.async_call(DOMAIN, "rebuild", {"day": "monday"}, blocking=True, return_response=True)
+    await hass.async_block_till_done()
+    assert not [f for f in hass.config_entries.flow.async_progress() if f["context"]["source"] == "reauth"]

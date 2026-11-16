@@ -73,11 +73,13 @@
           "seeds": "Seed-nummers",
           "min_year": "Geen nummers van vóór",
           "max_rap": "Max. rapnummers",
-          "seed_weeks": "Seeds rouleren over (weken)"
+          "seed_weeks": "Seeds rouleren over (weken)",
+          "rebuild_now": "Lijst van deze dag nu opnieuw opbouwen"
         },
         "data_description": {
           "searches": "Gebruik genre-filters, bv. 'happy genre:pop'. Kale woorden als 'focus' trekken rommel aan.",
-          "seed_weeks": "Leeg = algemene instelling. 2 = elke week de helft van de seeds, de langst niet gespeelde eerst."
+          "seed_weeks": "Leeg = algemene instelling. 2 = elke week de helft van de seeds, de langst niet gespeelde eerst.",
+          "rebuild_now": "Gebeurt op de achtergrond (ongeveer een minuut); anders geldt de wijziging bij de volgende verversing van deze dag."
         }
       },
       "blocklists": {
@@ -105,10 +107,12 @@
           "personal_max": "Max. eigen top/recent per dag",
           "search_pages": "Zoekpagina's per zoekterm",
           "market": "Land",
-          "playlist_name": "Playlistnaam"
+          "playlist_name": "Playlistnaam",
+          "covers": "Afbeelding per dag op de playlist zetten"
         },
         "data_description": {
-          "playlist_name": "Zet het woord dag tussen accolades op de plek waar de naam van de dag moet komen (zo staat het standaard al)."
+          "playlist_name": "Zet het woord dag tussen accolades op de plek waar de naam van de dag moet komen (zo staat het standaard al).",
+          "covers": "Zet één keer de Weekmix-afbeelding op de playlist van elke dag. Vraagt één keer opnieuw inloggen (extra Spotify-recht). Een afbeelding die je daarna zelf instelt, blijft staan."
         }
       }
     }

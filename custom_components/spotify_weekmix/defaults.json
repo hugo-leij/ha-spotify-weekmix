@@ -12,7 +12,8 @@
   "unique_titles": true,
   "market": "NL",
   "playlist_name": "{dag} – 18 uur muziek",
-  "desc_suffix": " Elke dag automatisch ververst, ~18 uur, geen dubbele nummers binnen de dag."
+  "desc_suffix": " Elke dag automatisch ververst, ~18 uur, geen dubbele nummers binnen de dag.",
+  "covers": true
  },
  "days": {
   "maandag": {

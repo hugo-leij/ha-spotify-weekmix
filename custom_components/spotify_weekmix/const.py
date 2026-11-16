@@ -11,7 +11,9 @@ SCOPES = [
     "user-top-read",
     "user-read-recently-played",
     "user-library-read",
+    "ugc-image-upload",          # eigen playlist-covers (sinds 0.2.0)
 ]
+COVER_SCOPE = "ugc-image-upload"
 
 STORAGE_VERSION = 1
 

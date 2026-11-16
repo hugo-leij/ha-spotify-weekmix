@@ -73,11 +73,13 @@
           "seeds": "Seed tracks",
           "min_year": "No tracks released before",
           "max_rap": "Max. rap tracks",
-          "seed_weeks": "Rotate seeds over (weeks)"
+          "seed_weeks": "Rotate seeds over (weeks)",
+          "rebuild_now": "Rebuild this day's playlist now"
         },
         "data_description": {
           "searches": "Use genre filters, e.g. 'happy genre:pop'. Bare words like 'focus' attract background music.",
-          "seed_weeks": "Empty = general setting. 2 = half of the seeds each week, least recently played first."
+          "seed_weeks": "Empty = general setting. 2 = half of the seeds each week, least recently played first.",
+          "rebuild_now": "Runs in the background (about a minute); otherwise the change is used at the next refresh of this day."
         }
       },
       "blocklists": {
@@ -105,10 +107,12 @@
           "personal_max": "Max. own top/recent per day",
           "search_pages": "Search pages per term",
           "market": "Market (country)",
-          "playlist_name": "Playlist name"
+          "playlist_name": "Playlist name",
+          "covers": "Set a cover image per day"
         },
         "data_description": {
-          "playlist_name": "Put the word dag between curly braces where the day name should go (the default already does)."
+          "playlist_name": "Put the word dag between curly braces where the day name should go (the default already does).",
+          "covers": "Puts the Weekmix cover on each day's playlist once. Requires logging in again once (extra Spotify permission). A cover you set yourself afterwards is left alone."
         }
       }
     }

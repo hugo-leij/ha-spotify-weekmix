@@ -121,6 +121,12 @@ class FakeSpotify:
         self.playlists[pid]["items"] += [(u, self.today) for u in uris]
 
     today = "2026-11-13"
+    cover_status = None          # bv. 403 om een ontbrekend recht na te bootsen
+
+    def playlist_upload_cover_image(self, pid, b64):
+        if self.cover_status:
+            raise SpotifyException(self.cover_status, -1, "no permission")
+        self.calls.append(("cover", pid, len(b64)))
 
     def current_user_top_tracks(self, limit, time_range):
         return {"items": [self.tracks_db[u] for u in self.top]}

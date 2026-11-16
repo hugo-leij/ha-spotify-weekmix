@@ -24,3 +24,6 @@ history.json.tmp
 settings.json
 settings.json.tmp
 .pytest_cache/
+
+# Gedownload lettertype van tools/make_images.py
+tools/.Anton-Regular.ttf

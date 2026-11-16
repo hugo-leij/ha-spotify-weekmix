@@ -48,9 +48,9 @@ def world(n_artists=40, per_artist=10, ms=180_000, **kw):
     return sp
 
 
-def build(sp, s, history=None, day="woensdag", today=TODAY, dry_run=False):
+def build(sp, s, history=None, day="woensdag", today=TODAY, dry_run=False, covers=False):
     history = {} if history is None else history
-    eng = engine.MixEngine(sp, s, history, log=lambda m: None)
+    eng = engine.MixEngine(sp, s, history, log=lambda m: None, allow_covers=covers)
     s["days"][day]["searches"] = s["days"][day]["searches"] or ["pop"]
     if not s["days"][day]["target"]:
         s["days"][day]["target"] = f"spotify:playlist:{sp.make_playlist()}"
@@ -310,3 +310,37 @@ def test_defaults_are_sane():
     assert len(DEFAULTS["days"]["woensdag"]["seeds"]) == 345
     assert all(engine.track_id(t) for d in DEFAULTS["days"].values() for t in d["seeds"])
     assert "Frenna" in DEFAULTS["block_artists"] and "Madonna" in DEFAULTS["allow_artists"]
+
+
+# ---------------- covers ----------------
+
+def test_cover_uploaded_once_per_version():
+    sp = world()
+    s = settings()
+    eng, _ = build(sp, s, covers=True)
+    covers = [c for c in sp.calls if isinstance(c, tuple) and c[0] == "cover"]
+    assert len(covers) == 1 and covers[0][2] < 256 * 1024          # Spotify-limiet base64
+    assert eng.settings_changed and s["cover_done"]
+    build(sp, s, {}, today=TODAY + datetime.timedelta(days=7), covers=True)
+    assert len([c for c in sp.calls if isinstance(c, tuple) and c[0] == "cover"]) == 1
+
+
+def test_cover_skipped_without_permission_or_when_disabled():
+    sp = world()
+    build(sp, settings(), covers=False)
+    build(sp, settings(covers=False), covers=True)
+    build(sp, settings(), dry_run=True, covers=True)
+    assert not [c for c in sp.calls if isinstance(c, tuple) and c[0] == "cover"]
+
+
+def test_cover_403_flags_reauth_but_build_succeeds():
+    sp = world()
+    sp.cover_status = 403
+    eng, r = build(sp, settings(), covers=True)
+    assert eng.cover_needs_reauth and r["tracks"] > 0
+
+
+def test_all_covers_present_and_small():
+    for day in engine.WEEKDAYS:
+        p = os.path.join(engine.COVERS_DIR, f"{day}.jpg")
+        assert os.path.getsize(p) * 4 / 3 < 256 * 1024, day

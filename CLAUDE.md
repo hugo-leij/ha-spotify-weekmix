@@ -210,6 +210,29 @@ Duration and keys come from `MixEngine.track_meta()`, which batches
 `sp.tracks()` (50 URIs per call, falling back to one-by-one, see Dev Mode below)
 and returns `uri -> (song_key, duration_ms)`.
 
+## Covers and brand images (0.2.0)
+
+- `covers/<dag>.jpg` (640×640, own design, ~35 KB) are uploaded once per
+  playlist per `COVER_VERSION` via `playlist_upload_cover_image`; done-state is
+  `settings["cover_done"][playlist_id]`, so a cover the user sets afterwards is
+  never overwritten. Bump `COVER_VERSION` to push redesigned covers. The user
+  asked to copy Spotify's "Discover Weekly" artwork — declined: Spotify's
+  artwork/logo are theirs, especially in a public repo.
+- Needs scope `ugc-image-upload` (added in 0.2.0). Old tokens lack it:
+  `manager._maybe_reauth_for_covers()` starts a reauth flow **once per HA run**
+  and rebuilds continue without covers. If the token has **no** `scope` field
+  at all, we can't know — then we just try, and a 401/403 from the upload
+  triggers the reauth. (spotipy's refresh response has no `scope`; HA's may.)
+- The CLI never uploads covers (`allow_covers=False`): adding the scope to the
+  CLI would invalidate the `.cache` token and force an interactive login.
+- `brand/` (icon, logo, dark variants, @2x) — HA ≥ 2026.3 serves brand images
+  from the integration folder; verified in a local HA 2026.10 (icon shows on
+  the integration page). Older HA shows "icon not available".
+- All images come from `tools/make_images.py` (Pillow + the OFL font Anton,
+  downloaded at run time, git-ignored).
+- The day form has *rebuild_now*: saves, then starts `async_rebuild([day])` as a
+  background task so the dialog closes immediately.
+
 ## Settings (HA options flow / `defaults.json`)
 
 Settings are a dict (schema = `defaults.json`): `general`, `days`, the lists
@@ -219,7 +242,7 @@ via *Configure* (menu: players & schedule / a day / blocklists / general);
 `merge_defaults()` adds keys introduced by later versions without touching user
 values (a day's `target` is never filled from defaults on merge).
 
-- `general`: `target_hours` (18), `max_per_artist` (4), `artist_gap` (20),
+- `general`: `covers` (true), `target_hours` (18), `max_per_artist` (4), `artist_gap` (20),
   `rest_days` (28), `seed_weeks` (2), `unique_titles` (true), `min_popularity`
   (25), `personal_max` (40), `search_pages` (19), `market` ("NL"),
   `playlist_name` ("{dag} – 18 uur muziek"), `desc_suffix`.

@@ -24,6 +24,7 @@ from .const import (
     CONF_MEDIA_PLAYERS,
     CONF_SHUFFLE_OFF,
     CONF_SKIP_ON_BLOCK,
+    COVER_SCOPE,
     DOMAIN,
     HA_DEFAULTS,
     SIGNAL_UPDATED,
@@ -74,6 +75,7 @@ class MixManager:
         self.last_error: str | None = None
         self.running: str | None = None
         self._lock = asyncio.Lock()
+        self._reauth_asked = False
 
     # ---------- opslag ----------
     async def async_load(self) -> None:
@@ -105,8 +107,28 @@ class MixManager:
             raise HomeAssistantError(f"Spotify login expired: {err}") from err
         return Spotify(auth=self.session.token["access_token"], requests_timeout=20, retries=5)
 
+    def _has_cover_scope(self) -> bool:
+        """Zit het recht voor covers in de login? Zonder 'scope'-veld in het token
+        weten we het niet: dan gewoon proberen (een 401/403 vraagt alsnog om
+        opnieuw inloggen)."""
+        scope = self.session.token.get("scope")
+        return scope is None or COVER_SCOPE in str(scope).split()
+
     def _engine(self, sp: Spotify, settings: dict, history: dict) -> engine.MixEngine:
-        return engine.MixEngine(sp, settings, history, log=lambda m: _LOGGER.info(m))
+        return engine.MixEngine(sp, settings, history, log=lambda m: _LOGGER.info(m),
+                                allow_covers=self._has_cover_scope())
+
+    def _maybe_reauth_for_covers(self, eng: engine.MixEngine | None = None) -> None:
+        """Covers aan maar de login (van vóór 0.2.0) mist het recht: vraag één
+        keer om opnieuw in te loggen. Verversen gaat gewoon door zonder cover."""
+        if not self.settings["general"].get("covers", True):
+            return
+        if self._has_cover_scope() and not (eng and eng.cover_needs_reauth):
+            return
+        if not self._reauth_asked:
+            self._reauth_asked = True
+            _LOGGER.warning("Covers need an extra Spotify permission; please re-authenticate")
+            self.entry.async_start_reauth(self.hass)
 
     # ---------- verversen ----------
     async def async_rebuild(self, days: list[str], dry_run: bool = False) -> dict[str, dict]:
@@ -137,9 +159,11 @@ class MixManager:
                 out[day] = res
                 if not dry_run:
                     self.history = history
-                    if eng.settings_changed:          # bv. nieuwe doelplaylist aangemaakt
+                    if eng.settings_changed:          # nieuwe doelplaylist en/of cover gezet
                         for d in engine.WEEKDAYS:
                             self.settings["days"][d]["target"] = settings["days"][d]["target"]
+                        self.settings["cover_done"] = settings.get("cover_done", {})
+                    self._maybe_reauth_for_covers(eng)
                     self.results[day] = res
                     self.last_error = None
                     await self.async_save()

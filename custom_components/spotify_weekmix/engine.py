@@ -14,7 +14,9 @@ valkuilen per filter): zie CLAUDE.md in de repo.
 
 from __future__ import annotations
 
+import base64
 import datetime
+import os
 import random
 import re
 from typing import Callable
@@ -22,7 +24,13 @@ from typing import Callable
 from spotipy import Spotify
 from spotipy.exceptions import SpotifyException
 
-ENGINE_VERSION = "2026-11-13"
+ENGINE_VERSION = "2026-11-16"
+
+# Verhoog dit als de covers opnieuw ontworpen zijn: dan worden ze één keer
+# opnieuw op elke playlist gezet. Daarna blijft een cover met rust (ook als de
+# gebruiker er zelf een andere op heeft gezet).
+COVER_VERSION = 1
+COVERS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "covers")
 
 WEEKDAYS = ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag"]
 
@@ -134,13 +142,15 @@ class MixEngine:
     """Bouwt dag-playlists. Niet thread-safe; maak er één per run."""
 
     def __init__(self, sp: Spotify, settings: dict, history: dict[str, str],
-                 log: Callable[[str], None] = print):
+                 log: Callable[[str], None] = print, allow_covers: bool = False):
         self.sp = sp
         self.s = settings
         self.g = settings["general"]
         self.history = history
         self.log = log
         self.settings_changed = False          # bv. als een doel-playlist is aangemaakt
+        self.allow_covers = allow_covers       # vereist scope ugc-image-upload
+        self.cover_needs_reauth = False
         self._genre_cache: dict[str, list[str]] = {}
         self._artist_name_cache: dict[str, str] = {}
         self._single_tracks = False            # batch-endpoints weg (nieuwe Dev Mode-app)
@@ -547,7 +557,32 @@ class MixEngine:
 
         self.replace_items(target, chosen)
         self.log(f"[{day}] doelplaylist bijgewerkt.")
+        self.ensure_cover(day, target)
         return result
+
+    def ensure_cover(self, day: str, target: str) -> None:
+        """Zet de eigen cover van de dag op de playlist, één keer per COVER_VERSION."""
+        if not self.allow_covers or not self.g.get("covers", True):
+            return
+        pid = normalize_playlist_id(target)
+        done = self.s.setdefault("cover_done", {})
+        if done.get(pid) == COVER_VERSION:
+            return
+        path = os.path.join(COVERS_DIR, f"{day}.jpg")
+        if not os.path.exists(path):
+            return
+        with open(path, "rb") as fh:
+            data = base64.b64encode(fh.read()).decode()
+        try:
+            self.sp.playlist_upload_cover_image(pid, data)
+        except SpotifyException as e:
+            if e.http_status in (401, 403):
+                self.cover_needs_reauth = True
+            self.log(f"[{day}] cover uploaden mislukt ({e.http_status}): {e.msg}")
+            return
+        done[pid] = COVER_VERSION
+        self.settings_changed = True
+        self.log(f"[{day}] cover gezet.")
 
     def replace_items(self, target: str, uris: list[str]) -> None:
         current = [u for u, _ in self.playlist_items_dated(target)]

@@ -22,5 +22,3 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
-          # Geen merk-icoon in home-assistant/brands (nog).
-          ignore: brands
