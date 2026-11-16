@@ -234,6 +234,24 @@ and returns `uri -> (song_key, duration_ms)`.
 - The day form has *rebuild_now*: saves, then starts `async_rebuild([day])` as a
   background task so the dialog closes immediately.
 
+## Recently played sensor (0.4.0)
+
+`sensor.…_recently_played` — the user asked for "the last 10 tracks so a card
+can block them", and explicitly wanted **only a sensor** (people build their
+own cards) and **no extra API traffic**. So it listens to state changes of
+`ha.media_players` (`async_track_state_change_event`), not to Spotify's
+recently-played endpoint (which lags minutes and only counts plays > 30 s).
+Only `playing` states with a Spotify track id in `media_content_id` count
+(`engine.track_id` understands Sonos' `x-sonos-spotify:spotify%3atrack%3a…`);
+the same id as the newest entry is ignored (grouped speakers, pause/play).
+Use `last_updated`, not `last_changed`: playing→playing with a new track
+doesn't change `last_changed`. Stored in `.storage` (`recent`), 10 items.
+`blocked`/`artist_blocked` are computed live from the blocklists.
+`unblock_track` removes the URI and the matching `artist|title` key; a seed that
+was removed by *block current track* does **not** come back.
+Templates in `tap_action` data aren't rendered by built-in cards — hence the
+README's script-with-`index` pattern.
+
 ## Hardcoded vs. configurable (audit 2026-11-16)
 
 Everything that *filters* is now a setting. 0.3.0 moved the last one: the

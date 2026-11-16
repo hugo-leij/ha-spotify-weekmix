@@ -51,7 +51,7 @@
           "skip_on_block": "Skip to the next track after blocking"
         },
         "data_description": {
-          "media_players": "The first player is used by the 'Never this artist/track again' buttons.",
+          "media_players": "The first player is used by the 'Never this artist/track again' buttons. All players feed the 'Recently played' sensor.",
           "auto_refresh": "Leave OFF while another job still rebuilds the same playlists, or they will overwrite each other.",
           "shuffle_off": "The playlist is already shuffled with artists spread apart. Spotify shuffle makes it worse, and Smart Shuffle adds tracks that bypass every filter."
         }
@@ -228,6 +228,20 @@
           "description": "Only needed with multiple accounts."
         }
       }
+    },
+    "unblock_track": {
+      "name": "Unblock track",
+      "description": "Removes a track from the blocklist again.",
+      "fields": {
+        "track": {
+          "name": "Track",
+          "description": "Spotify link or URI (or artist|title)."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Only needed with multiple accounts."
+        }
+      }
     }
   },
   "entity": {
@@ -260,6 +274,9 @@
           "running": "Running",
           "error": "Error"
         }
+      },
+      "recently_played": {
+        "name": "Recently played"
       }
     },
     "button": {

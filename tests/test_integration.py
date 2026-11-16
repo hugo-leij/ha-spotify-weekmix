@@ -343,3 +343,65 @@ async def test_blocklists_form_saves_scripts(hass, entry):
         "block_scripts": ["chinese", "arabic"], "block_artists": "A", "block_genres": "phonk"})
     assert r["type"] is FlowResultType.CREATE_ENTRY
     assert mgr.settings["block_scripts"] == ["chinese", "arabic"]
+
+
+# ---------------- laatst gespeeld (0.4.0) ----------------
+
+def _play(hass, entity, tid, title, artist, state="playing"):
+    hass.states.async_set(entity, state, {
+        "media_content_id": f"x-sonos-spotify:spotify%3atrack%3a{tid}?sid=9&flags=8224&sn=1",
+        "media_title": title, "media_artist": artist})
+
+
+def _recent(hass):
+    st = hass.states.get("sensor.spotify_weekmix_saints_recently_played")
+    return st, st.attributes.get("tracks", [])
+
+
+async def test_recently_played_from_players_without_api(hass, entry, removed):
+    mgr = await setup(hass, entry)
+    await mgr.async_update_settings(lambda s: s["ha"].update(media_players=["media_player.woonkamer", "media_player.keuken"]))
+    mgr.reschedule()
+    ids = [f"{i:022d}" for i in range(1, 14)]
+    for i, tid in enumerate(ids):
+        _play(hass, "media_player.woonkamer", tid, f"Song {i}", f"Artist {i}, Gast")
+        _play(hass, "media_player.keuken", tid, f"Song {i}", f"Artist {i}, Gast")   # gegroepeerd: zelfde nummer
+        await hass.async_block_till_done()
+    hass.states.async_set("media_player.woonkamer", "playing", {"media_content_id": "x-rincon-mp3radio://radio", "media_title": "Radio 2"})
+    _play(hass, "media_player.woonkamer", ids[-1], "Song 12", "Artist 12", state="paused")
+    await hass.async_block_till_done()
+    st, tracks = _recent(hass)
+    assert st.state == "Artist 12, Gast – Song 12"
+    assert len(tracks) == 10 and tracks[0]["track_id"] == ids[-1] and tracks[-1]["track_id"] == ids[3]
+    assert tracks[0]["uri"] == f"spotify:track:{ids[-1]}" and not tracks[0]["blocked"]
+    # blokkeren vanuit de lijst -> attribuut laat het zien
+    await hass.services.async_call(DOMAIN, "block_track", {"track": tracks[1]["uri"]}, blocking=True, return_response=True)
+    await hass.services.async_call(DOMAIN, "block_artist", {"artist": "Artist 10"}, blocking=True, return_response=True)
+    await hass.async_block_till_done()
+    _, tracks = _recent(hass)
+    assert tracks[1]["blocked"] and tracks[2]["artist_blocked"] and not tracks[0]["blocked"]
+    # en weer toestaan
+    await hass.services.async_call(DOMAIN, "unblock_track", {"track": tracks[1]["url"]}, blocking=True, return_response=True)
+    await hass.async_block_till_done()
+    _, tracks = _recent(hass)
+    assert not tracks[1]["blocked"]
+
+
+async def test_recently_played_survives_reload(hass, entry):
+    mgr = await setup(hass, entry)
+    await mgr.async_update_settings(lambda s: s["ha"].update(media_players=["media_player.woonkamer"]))
+    mgr.reschedule()
+    _play(hass, "media_player.woonkamer", "4uLU6hMCjMI75M1A2tKUQC", "Blinding Lights", "The Weeknd")
+    await hass.async_block_till_done()
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    _, tracks = _recent(hass)
+    assert tracks and tracks[0]["title"] == "Blinding Lights"
+
+
+async def test_no_players_configured_no_listening(hass, entry):
+    await setup(hass, entry)
+    _play(hass, "media_player.woonkamer", "4uLU6hMCjMI75M1A2tKUQC", "X", "Y")
+    await hass.async_block_till_done()
+    st, tracks = _recent(hass)
+    assert tracks == [] and st.state in ("unknown", None)

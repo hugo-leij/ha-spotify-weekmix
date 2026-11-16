@@ -68,6 +68,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         return await _manager(hass, call).async_block_track(
             call.data.get("track"), call.data.get("entity_id"))
 
+    async def unblock_track(call: ServiceCall) -> ServiceResponse:
+        return await _manager(hass, call).async_unblock_track(call.data["track"])
+
     async def unblock_artist(call: ServiceCall) -> ServiceResponse:
         return await _manager(hass, call).async_unblock_artist(call.data["artist"])
 
@@ -86,6 +89,10 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         DOMAIN, "block_track", block_track,
         schema=vol.Schema({**base, vol.Optional("track"): cv.string,
                            vol.Optional("entity_id"): cv.entity_id}),
+        supports_response=SupportsResponse.OPTIONAL)
+    hass.services.async_register(
+        DOMAIN, "unblock_track", unblock_track,
+        schema=vol.Schema({**base, vol.Required("track"): cv.string}),
         supports_response=SupportsResponse.OPTIONAL)
     hass.services.async_register(
         DOMAIN, "unblock_artist", unblock_artist,
@@ -128,9 +135,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: SpotifyMixConfigEntry) -
         mgr._unsub_time = async_track_time_change(hass, _run, hour=h, minute=m, second=s)
         _LOGGER.info("Spotify weekmix: daily refresh at %02d:%02d:%02d", h, m, s)
 
-    mgr.reschedule = _schedule
-    _schedule()
+    @callback
+    def _reconfigure() -> None:                 # na het opslaan van instellingen
+        _schedule()
+        mgr.listen_players()
+
+    mgr.reschedule = _reconfigure
+    _reconfigure()
     entry.async_on_unload(lambda: mgr._unsub_time() if getattr(mgr, "_unsub_time", None) else None)
+    entry.async_on_unload(mgr.stop_listening)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True

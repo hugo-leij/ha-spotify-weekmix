@@ -48,6 +48,9 @@ remembers what played recently, so Wednesday doesn't sound like last Wednesday.
 - **Everything configurable in the UI**: per day (target playlist, source
   playlists, search terms, seeds, minimum year, rap cap), blocklists, players,
   schedule and general settings.
+- **Recently played sensor.** The last 10 Spotify tracks on your players, with
+  everything needed to block (or unblock) them from a card of your own design —
+  taken from the players in Home Assistant, so no extra Spotify API calls.
 - **A cover per day.** Each playlist gets its own weekmix cover (once; a
   cover you set yourself afterwards is left alone).
 - **Sensors** per day (last refresh, tracks, hours, artists, seeds used,
@@ -176,6 +179,7 @@ Entity IDs are always English; names follow your Home Assistant language
 | `button.spotify_weekmix_<account>_never_this_track_again` | Block the track playing on the first player |
 | `switch.spotify_weekmix_<account>_automatic_daily_refresh` | Daily automatic refresh |
 | `sensor.spotify_weekmix_<account>_monday` … `_sunday` | Time of the last refresh; attributes `tracks`, `hours`, `artists`, `seeds_used`, `repeats`, `playlist_uri`, `playlist_url`, … |
+| `sensor.spotify_weekmix_<account>_recently_played` | Last track played (`artist – title`); attribute `tracks`: the last 10, newest first |
 | `sensor.spotify_weekmix_<account>_status` | `ok`, `running` or `error`; attributes `last_error`, `version`, `blocked_artists`, `tracks_in_history`, … |
 
 ## Services
@@ -185,6 +189,7 @@ Entity IDs are always English; names follow your Home Assistant language
 | `spotify_weekmix.rebuild` | `day`: `today` (default), `all`, or `monday` … `sunday` · `dry_run`: compute only |
 | `spotify_weekmix.block_artist` | `artist` (empty = now playing) · `entity_id` (player) |
 | `spotify_weekmix.block_track` | `track` (Spotify link/URI; empty = now playing) · `entity_id` |
+| `spotify_weekmix.unblock_track` | `track` (Spotify link/URI) |
 | `spotify_weekmix.unblock_artist` | `artist` |
 
 All services return a response, e.g. the result of a rebuild:
@@ -217,6 +222,64 @@ automation:
             {{ state_attr('sensor.spotify_weekmix_saints_' ~ ['monday','tuesday','wednesday',
                'thursday','friday','saturday','sunday'][now().weekday()], 'playlist_uri') }}
 ```
+
+## Recently played
+
+`sensor.spotify_weekmix_<account>_recently_played` follows the players selected
+under *Players & schedule*: every new Spotify track that starts playing is added
+at the top (radio/TV and grouped speakers playing the same track are ignored).
+It reads the players' state in Home Assistant — no Spotify API calls — and
+survives restarts. Each item in the `tracks` attribute looks like:
+
+```yaml
+track_id: 4uLU6hMCjMI75M1A2tKUQC
+uri: spotify:track:4uLU6hMCjMI75M1A2tKUQC
+url: https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC
+title: Blinding Lights
+artist: The Weeknd
+album: After Hours
+image: /api/media_player_proxy/...
+player: media_player.living_room
+played_at: "2026-11-16T09:41:03+00:00"
+blocked: false          # track is on the blocklist
+artist_blocked: false   # artist is on the blocklist
+```
+
+Build any card you like on top of it. An example with only built-in cards: a
+script that blocks item *n*, and a card that lists the tracks.
+
+```yaml
+script:
+  weekmix_block_recent:
+    alias: Block a recently played track
+    fields:
+      index: { selector: { number: { min: 0, max: 9 } } }
+      what: { selector: { select: { options: [track, artist] } } }
+    sequence:
+      - variables:
+          item: "{{ state_attr('sensor.spotify_weekmix_saints_recently_played', 'tracks')[index | int] }}"
+      - if: "{{ what == 'artist' }}"
+        then:
+          - action: spotify_weekmix.block_artist
+            data: { artist: "{{ item.artist.split(',')[0] }}" }
+        else:
+          - action: spotify_weekmix.block_track
+            data: { track: "{{ item.uri }}" }
+```
+
+```yaml
+type: markdown
+title: Recently played
+content: >
+  {% for t in state_attr('sensor.spotify_weekmix_saints_recently_played', 'tracks') or [] %}
+  {{ loop.index0 }}. {{ '~~' if t.blocked or t.artist_blocked }}**{{ t.title }}** – {{ t.artist }}{{ '~~' if t.blocked or t.artist_blocked }}
+  {% endfor %}
+```
+
+Add buttons (e.g. a *Button* card with `tap_action: perform-action`,
+`perform_action: script.weekmix_block_recent`, `data: {index: 1, what: track}`)
+or use a custom card such as Mushroom or button-card for a list with a button
+per row.
 
 ## Troubleshooting
 

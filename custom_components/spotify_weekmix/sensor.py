@@ -14,7 +14,8 @@ from .entity import MixEntity
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddEntitiesCallback) -> None:
     mgr = entry.runtime_data
-    async_add_entities([DaySensor(mgr, d) for d in engine.WEEKDAYS] + [StatusSensor(mgr)])
+    async_add_entities([DaySensor(mgr, d) for d in engine.WEEKDAYS]
+                       + [StatusSensor(mgr), RecentSensor(mgr)])
 
 
 class DaySensor(MixEntity, SensorEntity):
@@ -72,3 +73,33 @@ class StatusSensor(MixEntity, SensorEntity):
             "auto_refresh": s["ha"].get("auto_refresh"),
             "refresh_time": s["ha"].get("refresh_time"),
         }
+
+
+class RecentSensor(MixEntity, SensorEntity):
+    """Laatst gespeelde nummers op de ingestelde spelers (geen Spotify-API).
+
+    State: 'artiest – titel' van het laatste nummer. Attribuut `tracks`: de
+    laatste 10, nieuwste eerst, met `uri` om aan block_track/unblock_track te
+    geven en `blocked`/`artist_blocked` om in een kaart te tonen.
+    """
+
+    _attr_translation_key = "recently_played"
+    _attr_icon = "mdi:history"
+
+    def __init__(self, mgr) -> None:
+        super().__init__(mgr, "recently_played")
+
+    @property
+    def native_value(self) -> str | None:
+        if not self.mgr.recent:
+            return None
+        last = self.mgr.recent[0]
+        return f"{last.get('artist') or '?'} – {last.get('title') or '?'}"[:255]
+
+    @property
+    def extra_state_attributes(self):
+        return {"tracks": [
+            {**item, "blocked": self.mgr.is_track_blocked(item),
+             "artist_blocked": self.mgr.is_artist_blocked(item)}
+            for item in self.mgr.recent
+        ]}

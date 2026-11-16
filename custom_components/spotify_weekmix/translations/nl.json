@@ -51,7 +51,7 @@
           "skip_on_block": "Na blokkeren meteen naar het volgende nummer"
         },
         "data_description": {
-          "media_players": "De eerste speler wordt gebruikt door de knoppen 'Deze artiest/dit nummer nooit meer'.",
+          "media_players": "De eerste speler wordt gebruikt door de knoppen 'Deze artiest/dit nummer nooit meer'. Alle spelers vullen de sensor 'Laatst gespeeld'.",
           "auto_refresh": "Laat UIT zolang de oude AppDaemon-job nog draait, anders overschrijven ze elkaar.",
           "shuffle_off": "De lijst is al gehusseld met artiesten uit elkaar. Spotify-shuffle maakt het slechter en Smart Shuffle voegt nummers toe die langs alle filters gaan."
         }
@@ -228,6 +228,20 @@
           "description": "Alleen nodig bij meerdere accounts."
         }
       }
+    },
+    "unblock_track": {
+      "name": "Nummer weer toestaan",
+      "description": "Haalt een nummer weer van de blocklist.",
+      "fields": {
+        "track": {
+          "name": "Nummer",
+          "description": "Spotify-link of URI (of artiest|titel)."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Alleen nodig bij meerdere accounts."
+        }
+      }
     }
   },
   "entity": {
@@ -260,6 +274,9 @@
           "running": "Bezig",
           "error": "Fout"
         }
+      },
+      "recently_played": {
+        "name": "Laatst gespeeld"
       }
     },
     "button": {

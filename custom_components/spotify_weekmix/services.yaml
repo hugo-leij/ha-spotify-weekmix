@@ -40,6 +40,16 @@ block_track:
       selector:
         config_entry:
           integration: spotify_weekmix
+unblock_track:
+  fields:
+    track:
+      required: true
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: spotify_weekmix
 unblock_artist:
   fields:
     artist:

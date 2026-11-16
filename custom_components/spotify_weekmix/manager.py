@@ -12,7 +12,8 @@ from typing import Any
 from spotipy import Spotify
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
+from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_entry_oauth2_flow
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -79,6 +80,11 @@ def merge_defaults(settings: dict, defaults: dict) -> dict:
     return out
 
 
+def _first_artist(artist: str) -> str:
+    """Sonos/Spotify geven bij een collab 'A, B' of 'A & B': de hoofdartiest."""
+    return str(artist).replace(" & ", ",").split(",")[0].strip()
+
+
 class MixManager:
     """Eén per config entry: instellingen, geheugen, runs en blokkeren."""
 
@@ -95,6 +101,8 @@ class MixManager:
         self.running: str | None = None
         self._lock = asyncio.Lock()
         self._reauth_asked = False
+        self.recent: list[dict] = []             # laatst gespeelde nummers (nieuwste eerst)
+        self._unsub_players = None
 
     # ---------- opslag ----------
     async def async_load(self) -> None:
@@ -103,12 +111,14 @@ class MixManager:
         self.settings = merge_defaults(data.get("settings") or defaults, defaults)
         self.history = data.get("history") or {}
         self.results = data.get("results") or {}
+        self.recent = data.get("recent") or []
         if not data:
             await self.async_save()
 
     async def async_save(self) -> None:
         await self.store.async_save({
             "settings": self.settings, "history": self.history, "results": self.results,
+            "recent": self.recent,
         })
 
     @property
@@ -227,8 +237,7 @@ class MixManager:
             if not artist:
                 raise HomeAssistantError(f"{player} is not playing a track with an artist.")
         # Sonos/Spotify geven bij een collab soms 'A, B' of 'A & B': neem de eerste.
-        names = [a.strip() for a in str(artist).replace(" & ", ",").split(",") if a.strip()]
-        name = names[0] if names else str(artist).strip()
+        name = _first_artist(artist) or str(artist).strip()
         lst = self.settings.setdefault("block_artists", [])
         if name.lower() not in {a.lower() for a in lst}:
             lst.append(name)
@@ -249,7 +258,7 @@ class MixManager:
             artist = state.attributes.get("media_artist")
             title = state.attributes.get("media_title")
             if artist and title:
-                key = engine.song_key(str(artist).split(",")[0].split(" & ")[0], str(title))
+                key = engine.song_key(_first_artist(artist), str(title))
             if not tid and not key:
                 raise HomeAssistantError(f"{player} is not playing a recognisable track.")
         lst = self.settings.setdefault("block_tracks", [])
@@ -269,6 +278,84 @@ class MixManager:
         await self._skip(player)
         self.notify()
         return {"blocked": entries, "removed": removed}
+
+    # ---------- laatst gespeeld (uit de spelers in HA, geen Spotify-API) ----------
+    RECENT_MAX = 10
+
+    @callback
+    def listen_players(self) -> None:
+        """(Opnieuw) luisteren naar de ingestelde spelers. Elk nieuw Spotify-nummer
+        dat gaat spelen komt bovenaan de lijst. Kost geen API-verkeer."""
+        if self._unsub_players:
+            self._unsub_players()
+            self._unsub_players = None
+        players = list(self.ha.get(CONF_MEDIA_PLAYERS) or [])
+        if players:
+            self._unsub_players = async_track_state_change_event(
+                self.hass, players, self._player_changed)
+
+    @callback
+    def stop_listening(self) -> None:
+        if self._unsub_players:
+            self._unsub_players()
+            self._unsub_players = None
+
+    @callback
+    def _player_changed(self, event: Event[EventStateChangedData]) -> None:
+        new = event.data.get("new_state")
+        if new is None or new.state != "playing":
+            return
+        attrs = new.attributes
+        tid = engine.track_id(str(attrs.get("media_content_id") or ""))
+        if not tid:                                  # radio, tv, … : geen Spotify-nummer
+            return
+        if self.recent and self.recent[0].get("track_id") == tid:
+            return                                   # zelfde nummer (gegroepeerde speakers, pauze/play)
+        self.recent.insert(0, {
+            "track_id": tid,
+            "uri": f"spotify:track:{tid}",
+            "url": f"https://open.spotify.com/track/{tid}",
+            "title": attrs.get("media_title"),
+            "artist": attrs.get("media_artist"),
+            "album": attrs.get("media_album_name"),
+            "image": attrs.get("entity_picture"),
+            "player": new.entity_id,
+            "played_at": new.last_updated.isoformat(),   # last_changed blijft staan bij playing->playing
+        })
+        del self.recent[self.RECENT_MAX:]
+        self.notify()
+        self.hass.async_create_task(self.async_save())
+
+    def is_track_blocked(self, item: dict) -> bool:
+        bt = self.settings.get("block_tracks", [])
+        if item.get("uri") in bt:
+            return True
+        if item.get("artist") and item.get("title"):
+            return engine.song_key(_first_artist(item["artist"]), item["title"]) in bt
+        return False
+
+    def is_artist_blocked(self, item: dict) -> bool:
+        name = _first_artist(item.get("artist") or "").lower()
+        return bool(name) and name in {a.lower() for a in self.settings.get("block_artists", [])}
+
+    async def async_unblock_track(self, track: str) -> dict[str, Any]:
+        """Haalt een nummer weer van de blocklist (op link/URI én op artiest|titel).
+        Een seed die bij het blokkeren is weggehaald, komt NIET vanzelf terug."""
+        tid = engine.track_id(track or "")
+        keys = set()
+        if tid:
+            keys.add(f"spotify:track:{tid}")
+            for item in self.recent:
+                if item.get("track_id") == tid and item.get("artist") and item.get("title"):
+                    keys.add(engine.song_key(_first_artist(item["artist"]), item["title"]))
+        elif "|" in (track or ""):
+            keys.add(track.strip().lower())
+        lst = self.settings.get("block_tracks", [])
+        before = len(lst)
+        self.settings["block_tracks"] = [x for x in lst if x not in keys]
+        await self.async_save()
+        self.notify()
+        return {"track": track, "removed_from_blocklist": before - len(self.settings["block_tracks"])}
 
     async def async_unblock_artist(self, artist: str) -> dict[str, Any]:
         lst = self.settings.get("block_artists", [])
